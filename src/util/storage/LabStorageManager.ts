@@ -64,28 +64,6 @@ export class LabStorageManager extends BaseStorageManager {
     }
 
     /**
-     * Updates the 'required' status of a specific lab
-     * @param courseId Course ID
-     * @param labId Lab ID
-     * @param required New required/optional status
-     */
-    static async updateLabRequired(courseId: string, labId: string, required: boolean): Promise<void> {
-        const data = await this.getLabData(courseId);
-        if (!data) {
-            throw new Error(`No lab data found for course ${courseId}`);
-        }
-
-        const lab = data.labs.find(l => l.id === labId);
-        if (!lab) {
-            throw new Error(`Lab ${labId} not found`);
-        }
-
-        lab.required = required;
-
-        await this.saveLabData(courseId, data.labs);
-    }
-
-    /**
      * Actualiza el nivel de verbosidad de un laboratorio específico
      * @param courseId ID del curso
      * @param labId ID del laboratorio

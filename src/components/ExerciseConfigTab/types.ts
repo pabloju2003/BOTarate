@@ -1,5 +1,5 @@
 import type { Exercise } from "../../types/shared";
-export type { Exercise } from "../../types/shared";
+export type { Exercise, ReasoningEffort, VerbosityLevel } from "../../types/shared";
 
 export interface ExerciseFlags {
     allowed: boolean;
@@ -9,6 +9,8 @@ export interface ExerciseFlags {
 export interface ExerciseConfigTabProps {
     exercises: Exercise[];
     pageId: string;
+    courseId?: string;
+    pageName?: string;
     onConfigUpdate?: () => void;
     isActive: boolean;
 }

@@ -116,14 +116,6 @@ export const handleSaveChanges = async (
 
         // Save other configuration changes
         for (const [labId, changes] of pendingChanges) {
-            if (changes.required !== undefined) {
-                await chrome.runtime.sendMessage({
-                    action: "updateLabRequired",
-                    courseId: courseId,
-                    labId: labId,
-                    required: changes.required,
-                });
-            }
             if (changes.verbosity !== undefined) {
                 await chrome.runtime.sendMessage({
                     action: "updateLabVerbosity",

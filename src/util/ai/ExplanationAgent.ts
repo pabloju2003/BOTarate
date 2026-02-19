@@ -103,8 +103,6 @@ PEDAGOGICAL CONTEXT:
 
 {teacherPersonalization}
 
-{languageInstruction}
-
 {importantNotes}
 
 {pickyInstructions}`;
@@ -120,7 +118,6 @@ PEDAGOGICAL CONTEXT:
             pageIdNote: pageId ? `Page ID: ${pageId}\n- Use this ID as the value for the 'pageId' parameter when calling getPageContent or getFilteredFileContent.` : '',
             ...pedagogicalContext,
             teacherPersonalization: this.buildTeacherPersonalization(),
-            languageInstruction: this.buildLanguageInstruction(),
             importantNotes: agentConfig.importantNotes || '',
             pickyInstructions: pickyInstructions
         };
@@ -142,6 +139,7 @@ INSTRUCTIONS FOR THIS EXERCISE:
 1. You MUST intentionally introduce one or more subtle mistakes in your explanation.
 2. The mistakes should be plausible enough that they require careful review to detect.
 3. NEVER mention in the explanation that there are intentional mistakes or that the student should look for errors. The explanation should be presented as if it were completely correct.
+4. NEVER include warnings, meta-comments, disclaimers, or hints such as: "this may be wrong", "intentional error", "double-check this", "I might be mistaken", "this is incorrect", or similar phrases.
 5. Act completely naturally as if you were providing a correct explanation.
 
 ${pickyConfig ? `SPECIFIC MISTAKE GUIDELINES FROM TEACHER (may override previous instructions):\n${pickyConfig}\n` : ''}

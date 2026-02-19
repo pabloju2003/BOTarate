@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ExerciseEditModalProps } from "./types";
 
 export const useExerciseEditModal = ({
     exercise,
     isOpen,
     labId,
-    isAddMode,
     onExerciseUpdate,
-    onClose,
 }: ExerciseEditModalProps) => {
+    const { t } = useTranslation();
     const [name, setName] = useState("");
     const [statement, setStatement] = useState("");
+    const [originalName, setOriginalName] = useState("");
+    const [originalStatement, setOriginalStatement] = useState("");
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -18,12 +20,11 @@ export const useExerciseEditModal = ({
 
     useEffect(() => {
         if (isOpen && !isInitialized) {
-            if (isAddMode) {
-                setName("");
-                setStatement("");
-            } else if (exercise) {
+            if (exercise) {
                 setName(exercise.name);
                 setStatement(exercise.statement);
+                setOriginalName(exercise.name);
+                setOriginalStatement(exercise.statement);
             }
             setError(null);
             setSuccessMessage(null);
@@ -31,54 +32,50 @@ export const useExerciseEditModal = ({
         } else if (!isOpen) {
             setIsInitialized(false);
         }
-    }, [isOpen, exercise, isAddMode, isInitialized]);
+    }, [isOpen, exercise, isInitialized]);
 
-    const hasChanges = isAddMode
-        ? name.trim().length > 0
-        : (exercise && (name !== exercise.name || statement !== exercise.statement)) ?? false;
+    useEffect(() => {
+        setSuccessMessage(null);
+    }, [name, statement]);
+
+    const hasChanges = name.trim() !== originalName || statement.trim() !== originalStatement;
 
     const handleSave = async () => {
         if (!name.trim()) {
-            setError("Name is required");
+            setError(t("options.exerciseEdit.errors.nameRequired"));
             return;
         }
         setIsSaving(true);
         setError(null);
         setSuccessMessage(null);
         try {
-            if (isAddMode) {
-                await chrome.runtime.sendMessage({
-                    action: "addExercise",
-                    pageId: labId,
-                    exercise: { name: name.trim(), statement: statement.trim() },
-                });
-            } else {
-                await chrome.runtime.sendMessage({
-                    action: "updateExercise",
-                    pageId: labId,
-                    oldName: exercise?.name,
-                    exercise: { name: name.trim(), statement: statement.trim() },
-                });
+            if (!exercise?.name) {
+                throw new Error(t("options.exerciseEdit.errors.saveError"));
             }
 
-            // Terminar el estado de guardado
+            const response: { success?: boolean; error?: string } = await chrome.runtime.sendMessage({
+                action: "updateExercise",
+                pageId: labId,
+                oldName: exercise.name,
+                exercise: { name: name.trim(), statement: statement.trim() },
+            });
+
+            if (!response?.success) {
+                throw new Error(response?.error || t("options.exerciseEdit.errors.saveError"));
+            }
+
             setIsSaving(false);
+            setOriginalName(name.trim());
+            setOriginalStatement(statement.trim());
+            setSuccessMessage(t("options.exerciseEdit.success.updated"));
 
-            // Mostrar mensaje de éxito
-            setSuccessMessage(isAddMode ? "Exercise added successfully" : "Exercise updated successfully");
-
-            // Actualizar la lista de ejercicios inmediatamente
             if (onExerciseUpdate) {
                 onExerciseUpdate();
             }
-
-            // Cerrar el modal después de mostrar el mensaje por 2 segundos
-            setTimeout(() => {
-                onClose();
-            }, 2000);
         } catch (err) {
             console.error("Error saving exercise:", err);
-            setError("Error saving exercise");
+            const errorMessage = err instanceof Error ? err.message : t("options.exerciseEdit.errors.saveError");
+            setError(errorMessage);
             setIsSaving(false);
         }
     };

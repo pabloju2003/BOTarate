@@ -33,9 +33,8 @@
         "placeholder": {
             "disabledModal": "Txata desgaituta (modala irekita)...",
             "teacherMode": "Aldatu ikasle modura txata erabiltzeko...",
-            "labBlocked": "Laborategia blokeatuta...",
             "loadingExercises": "Ariketak kargatzen...",
-            "notConfigured": "Laborategia ez du irakasleak konfiguratu...",
+            "notConfigured": "BOTarate ez dago eskuragarri orrialde honetarako.",
             "default": "Idatzi zure galdera..."
         },
         "welcome": {
@@ -45,24 +44,15 @@
             "genericHelper": "Hemen nago irakasgaiarekin laguntzeko."
         },
         "status": {
-            "checkingAccess": "Laborategiko sarbidea egiaztatzen...",
-            "labBlockedTitle": "Laborategia blokeatuta",
-            "labBlockedDesc": "Laborategi hau blokeatuta dago, derrigorrezkoa delako eta oraindik ez duzulako aurrekoa osatu.",
-            "unlockTitle": "Laborategi hau desblokeatzeko:",
-            "unlockList": {
-                "complete": "Osatu aurreko laborategiko derrigorrezko erronka ariketak",
-                "criteria": "Bete irakasleak luzapenaren aukeretan definitutako irizpideak edo begiratu xehetasunak \"Nire aurrerapena\" atalean",
-                "checkProgress": "Egiaztatu zure aurrerapena \"Nire aurrerapena\" fitxan"
-            },
             "teacherModeTitle": "Irakasle modua aktibo",
             "teacherModeDesc": "Irakasle moduan zaude. Txat agentea erabiltzeko, ikasle modura aldatu behar duzu.",
             "teacherModeAction": "Joan <strong>\"Modua\"</strong> etengailura zure modua aldatzeko.",
             "loadingExercises": "Kargatzen...",
             "searchingExercises": "Ariketak bilatzen...",
             "analyzingContent": "Orriaren edukia aztertzen ariketa eskuragarriak identifikatzeko.",
-            "notConfiguredTitle": "Laborategia ez dago konfiguratuta",
-            "notConfiguredDesc": "Irakasleak oraindik ez du laborategi hau konfiguratu. Txata desgaituta dago konfigurazioa eskuragarri egon arte.",
-            "notConfiguredAction": "Mesedez, itxaron zure irakasleak laborategi hau konfiguratu arte edo jarri harremanetan berarekin informazio gehiagorako.",
+            "notConfiguredTitle": "BOTarate ez dago eskuragarri",
+            "notConfiguredDesc": "BOTarate ez dago eskuragarri orrialde honetarako.",
+            "notConfiguredAction": "",
             "generating": "Erantzuna sortzen..."
         },
         "roles": {
@@ -87,8 +77,14 @@
             "withName": "📦 \"{{name}}\" baliabidea irakurtzen...",
             "generic": "📦 Baliabidea irakurtzen..."
         },
-        "explainExercise": "💡 {{index}} ariketa azaltzen...",
-        "solveExercise": "📝 {{index}} ariketaren soluzio formularioa irekitzen...",
+        "explainExercise": {
+            "withName": "💡 \"{{name}}\" ariketa azaltzen...",
+            "default": "💡 {{index}} ariketa azaltzen..."
+        },
+        "solveExercise": {
+            "withName": "📝 \"{{name}}\" ariketaren soluzio formularioa irekitzen...",
+            "default": "📝 {{index}} ariketaren soluzio formularioa irekitzen..."
+        },
         "getFilteredFileContent": "🔍 Fitxategian bilatzen...",
         "analyzeImage": {
             "withName": "🖼️ \"{{name}}\" irudia aztertzen...",
@@ -111,11 +107,8 @@
             "chat": "Txata",
             "exercises": "Ariketak",
             "progress": "Nire aurrerapena",
-            "configureCourse": "Irakasgaia konfiguratu",
+            "configureCourse": "Sekzioa konfiguratu",
             "configureLab": "Laborategia konfiguratu"
-        },
-        "tooltips": {
-            "labBlocked": "Ez dago erabilgarri laborategia blokeatuta dagoen bitartean"
         },
         "checkingConfig": "Konfigurazioa egiaztatzen...",
         "courseLoadError": "Errorea ikasgaia kargatzean",
@@ -163,7 +156,6 @@
         "tabs": {
             "llm": "LLM Konfigurazioa",
             "agents": "Prompts",
-            "progress": "Aurrerapena",
             "importExport": "Inportatu/Esportatu"
         },
         "llm": {
@@ -207,6 +199,10 @@
                 "exerciseCriteria": {
                     "label": "Ariketen identifikazioa",
                     "desc": "Ariketa bat zer den eta nola atera behar den identifikatzeko irizpideak"
+                },
+                "excludedExercises": {
+                    "label": "Baztertzeko ariketak",
+                    "desc": "Sartu EZ diren ariketa motak edo patroiak deskribatu (adibidez: 'laborategiaren prestaketa' edo 'ariketen soluzioak')."
                 },
                 "role": {
                     "label": "Rola",
@@ -261,15 +257,15 @@
             "noLabOpenDesc": "Lehenik laborategia ireki behar duzu ariketak gehitu edo konfiguratu ahal izateko.",
             "table": {
                 "headerName": "Ariketaren izena",
-                "headerChallenge": "Ikasle bakarrik da",
-                "headerPicky": "Lagun faltsua da",
+                "headerChallenge": "Ikasle bakarrik",
+                "headerPicky": "Lagun faltsua",
                 "headerActions": "Ekintzak",
                 "badgeChallenge": "Ikasle bakarrik",
                 "badgePicky": "Lagun faltsua",
-                "switchChallengeOn": "Ikasle bakarrik da",
-                "switchChallengeOff": "Ez da ikasle bakarrik",
-                "switchPickyOn": "Lagun faltsua da",
-                "switchPickyOff": "Ez da lagun faltsua"
+                "switchChallengeOn": "Ikasle bakarrik",
+                "switchChallengeOff": "Ez ikasle bakarrik",
+                "switchPickyOn": "Lagun faltsua",
+                "switchPickyOff": "Ez lagun faltsua"
             },
             "unsavedTitle": "⚠️ Gorde gabeko aldaketak dituzu",
             "unsavedDesc": "Sakatu \"Gorde aldaketak\" konfigurazioa aplikatzeko eta agentea birsortzeko.",
@@ -283,17 +279,17 @@
             "loading": "Laborategiak kargatzen...",
             "noLabsTitle": "Ez dago laborategirik eskuragarri",
             "noLabsDesc": "Ez da laborategi gisa konfiguratu daitekeen 'page' motako baliabiderik aurkitu irakasgaian.",
+            "noLabsInSectionTitle": "Ez dago laborategirik atal honetan",
+            "noLabsInSectionDesc": "Atal honek ez du laborategi gisa konfiguratu daitekeen 'page' motako baliabiderik.",
             "infoTitle": "Irakasgaiaren konfigurazioa",
-            "infoDesc": "Konfiguratu zein laborategi sartu eta haien <strong>derrigorrezkotasuna</strong>, <strong>hitzezko maila</strong> eta <strong>arrazoibide</strong> aukerak.",
+            "infoDesc": "Konfiguratu zein laborategi sartu eta haien <strong>hitzezko maila</strong> eta <strong>arrazoibide</strong> aukerak.",
             "infoList": {
                 "include": "<strong>Laborategia sartu:</strong> Gaitu hau laborategia analizatzeko eta ariketak ateratzeko. Hau beharrezkoa da beste konfigurazio aukerak erabili aurretik.",
-                "required": "<strong>Derrigorrezko laborategia:</strong> Derrigorrezko gisa markatutako laborategiak sekuentzialki desblokeatuko dira ikasleak aurreko laborategiko erronkak osatzen dituenean.",
                 "verbosity": "<strong>Hitzezko maila:</strong> Agentearen azalpenen xehetasun maila kontrolatzen du (baxua, ertaina edo altua).",
                 "reasoning": "<strong>Arrazoibide ahalegina:</strong> Agenteak bere arrazoibidea azaltzeko zenbat xehetasun eman behar duen konfiguratzen du (minimoa, baxua, ertaina edo altua)."
             },
             "infoFooter": "Sakatu sartutako laborategi batean bere konfigurazio aukerak zabaltzeko.",
             "includeLabel": "Sartu",
-            "requiredLabel": "Derrigorrezko laborategia",
             "explanationConfig": "Azalpen agentearen konfigurazioa:",
             "goToLab": "Laborategira joan",
             "unsavedTitle": "⚠️ Gorde gabeko aldaketak dituzu",
@@ -320,7 +316,9 @@
                 "reasoningMedium": "Arrazoibide moderatua",
                 "reasoningHigh": "Arrazoibide zehatza pauso-pauso"
             },
-            "editContext": "Ikusi / Editatu testuingurua",
+            "editContext": "Testuingurua",
+            "regenerateContext": "Testuingurua birsortu",
+            "regenerating": "Birsortzen...",
             "exercisesTitle": "Ariketak:",
             "noExercises": "Ez dago ariketarik laboratorio honetan.",
             "addExercise": "Ariketa gehitu",
@@ -363,29 +361,15 @@
             "name": "Ariketaren izena",
             "namePlaceholder": "Sartu ariketaren izena...",
             "statement": "Enuntziatua",
-            "statementPlaceholder": "Sartu ariketaren enuntziatua..."
-        },
-        "progress": {
-            "loading": "Aurrerapen konfigurazioa kargatzen...",
-            "globalTitle": "Aurrerapen irizpide globalak",
-            "info": {
-                "title": "Konfiguratu laborategiak desblokeatzeko irizpideak",
-                "desc": "Doitu erronkak gainditzeko gutxieneko puntuazioa eta laborategia gainditzeko ehunekoa."
+            "statementPlaceholder": "Sartu ariketaren enuntziatua...",
+            "success": {
+                "added": "Ariketa ondo gehitu da.",
+                "updated": "Ariketa ondo eguneratu da."
             },
-            "minScore": {
-                "label": "Erronka ariketa bat gainditzeko gutxieneko puntuazioa",
-                "help": "Balio hau edo handiagoa duten erronkak gainditutzat hartuko dira."
-            },
-            "minPercentage": {
-                "label": "Aurrera egiteko gainditutako erronken gutxieneko ehunekoa",
-                "help": "Adibidez: %75arekin, laborategi batek 4 erronka baditu, gutxienez 3 gainditu behar dira hurrengoa desblokeatzeko."
-            },
-            "save": "Gorde irizpideak",
-            "saving": "Gordetzen...",
-            "restore": "Berrezarri balio lehenetsiak",
-            "errorLoad": "Ezin izan da konfigurazioa kargatu. Saiatu berriro.",
-            "successSave": "Aurrerapen irizpideak ondo gorde dira.",
-            "errorSave": "Ezin izan da gorde. Egiaztatu balioak eta saiatu berriro."
+            "errors": {
+                "nameRequired": "Izena derrigorrezkoa da.",
+                "saveError": "Errorea ariketa gordetzean."
+            }
         },
         "importExport": {
             "export": {
@@ -404,7 +388,11 @@
                 "title": "Arrisku eremua",
                 "description": "Ezabatu luzapenak gordetako datu guztiak betirako. Ekintza hau ezin da desegin.",
                 "button": "Ezabatu datu guztiak",
-                "processing": " Ezabatzen..."
+                "processing": " Ezabatzen...",
+                "clearContextTitle": "Laborategiaren testuingurua garbitu",
+                "clearContextDescription": "Laborategien sorturiko testuingurua soilik ezabatu (ariketak eta identifikatutako datuak). Agentearen promptak eta beste konfigurazioak mantenduko dira.",
+                "clearContextButton": "Laborategiaren testuingurua garbitu",
+                "clearContextProcessing": " Garbitzeagatik..."
             },
             "messages": {
                 "exportSuccess": "Konfigurazioa ondo esportatu da",
@@ -414,11 +402,14 @@
                 "importJsonError": "Fitxategiak ez du baliozko JSONik.",
                 "invalidFile": "Hautatu baliozko JSON fitxategi bat.",
                 "clearSuccess": "Datu guztiak ondo ezabatu dira",
+                "clearContextSuccess": "Laborategiaren testuingurua ondo ezabatua da",
                 "exportError": "Ustekabeko errorea esportatzean: {{error}}",
                 "importError": "Ustekabeko errorea inportatzean: {{error}}",
-                "clearError": "Ustekabeko errorea ezabatzean: {{error}}"
+                "clearError": "Ustekabeko errorea garbitzeagatik: {{error}}",
+                "clearContextError": "Ustekabeko errorea testuinguruaren garbitzeagatik: {{error}}"
             },
-            "confirmClear": "⚠️ OHARRA: Ekintza honek gordetako konfigurazio GUZTIA ezabatuko du, barne:\n\n- Agenteen konfigurazioa\n- Identifikatutako ariketen datuak\n- Konfiguratutako laborategien datuak\n\nEkintza hau EZIN DA desegin. Ziur jarraitu nahi duzula?"
+            "confirmClear": "⚠️ OHARRA: Ekintza honek gordetako konfigurazio GUZTIA ezabatuko du, barne:\n\n- Agenteen konfigurazioa\n- Identifikatutako ariketen datuak\n- Konfiguratutako laborategien datuak\n\nEkintza hau EZIN DA desegin. Ziur jarraitu nahi duzula?",
+            "confirmClearContext": "⚠️ OHARRA: Ekintza honek laborategien testuingurua SOILIK ezabatuko du (ariketak eta identifikatutako informazioa):\n\n- Identifikatutako ariketen datuak\n- Konfiguratutako laborategien datuak\n\nAgenteen promptak eta beste ezarpenak gordeko dira.\n\nEkintza hau EZIN DA desegin. Ziur jarraitu nahi duzula?"
         },
         "devMode": {
             "title": "Garatzaileentzako aukerak",
@@ -523,32 +514,18 @@
     },
     "progress": {
         "title": "Aurrerapena",
-        "completed": "Osatuta",
-        "pending": "Zain",
         "labs": "Laborategiak",
         "exercises": "Ariketak",
         "score": "Puntuazioa",
         "loading": "Aurrerapena kargatzen...",
         "noLabsTitle": "Ez dago laborategirik konfiguratuta",
-        "noLabsDesc": "Irakasleak oraindik ez du irakasgai honetarako laborategi eta aurrerapen sistema konfiguratu.",
-        "infoTitle": "Aurrerapen sistema",
-        "infoDesc": "Laborategiak sekuentzialki desblokeatzen dira. Laborategi batera sartzeko, aurreko laborategiko <strong>erronka ariketak</strong> osatu behar dituzu irakasleak definitutako irizpideen arabera.",
-        "infoList": {
-            "challenge": "<strong>Erronka ariketak:</strong> Adimen artifizialak ezin ditu azaldu, baina zure irtenbidea bidaltzean ebaluatu daitezke.",
-            "score": "<strong>Erregistratutako puntuazioa:</strong> Ariketa bakoitzerako zure puntuazio onena gordetzen da.",
-            "required": "<strong>Laborategi derrigorrezkoak soilik:</strong> Ikuspegi honek irakasleak derrigorrezkotzat markatutako laborategiak soilik erakusten ditu, aurrera egiteko osatu beharrekoak."
-        },
-        "criteriaTitle": "Uneko irizpideak:",
-        "minScore": "Gutxieneko puntuazioa erronka bakoitzeko: {{score}} / 10",
-        "minPercentage": "Gainditu beharreko erronken ehuneko minimoa: {{percentage}}% laborategiko erronka guztietatik",
+        "noLabsDesc": "Irakasleak oraindik ez du irakasgai honetarako laborategirik konfiguratu.",
         "labCard": {
-            "title": "{{index}}. Laborategia: {{name}}",
+            "title": "{{name}}",
+            "exercisesTitle": "Ariketak:",
             "exercises": "Ariketak: {{completed}} / {{total}}",
             "average": "Batez besteko puntuazioa: {{score}}",
-            "challengesTitle": "Erronka ariketak:",
-            "notAttempted": "Ez da saiatu",
-            "noChallenges": "Ez dago erronka ariketarik laborategi honetan.",
-            "locked": "Laborategia blokeatuta. Osatu aurreko laborategia konfiguratutako irizpideei jarraituz."
+            "notAttempted": "Ez da saiatu"
         }
     },
     "errors": {
@@ -567,7 +544,6 @@
         "languageInstruction": "Beti erantzun euskaraz.",
         "progressSummary": {
             "noProgress": "Ikasleak oraindik ez du laborategirik edo ariketa osatu.",
-            "completedLabs": "Osatutako laborategiak",
             "completedExercises": "Laborategi bakoitzeko osatutako ariketak"
         }
     }

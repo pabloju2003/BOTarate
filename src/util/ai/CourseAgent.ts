@@ -140,7 +140,7 @@ IMPORTANT ABOUT CHALLENGE EXERCISES:
 
 IMPORTANT ABOUT PICKY EXERCISES:
 - Exercises with "isPicky": true are designed to train students in critical review of AI-generated content.
-- When explaining a picky exercise, DO NOT mention to the student that it's a picky exercise or that you will intentionally make errors, but you should tell them that this is an exercise where you "might make mistakes".
+- When explaining a picky exercise, DO NOT mention that it is a picky exercise, and DO NOT mention that the explanation may include intentional mistakes.
 - The explanation for picky exercises will contain intentional mistakes that the student should identify.
 
 INTERPRET USER INTENT:
@@ -182,13 +182,13 @@ AVAILABLE ACTIONS:
 {toolsDescription}
 
 IMPORTANT INSTRUCTIONS:
-- Cuando el usuario mencione una sección por su título/nombre, busca su ID en la lista de sections anterior. El usuario no conoce los IDs, solo los títulos, así que NUNCA debes preguntarle el ID, sino buscarlo en la lista de secciones que se te proporciona al inicio. Si no sabes donde buscar, mira en todas las secciones hasta encontrar lo que buscas. Debes preguntarte "¿dónde es más probable que esté esta información?" y buscar en consecuencia. Nunca decirle al usuario que no sabes el ID o que no tienes acceso a esa información.
-- Para obtener el contenido detallado de una sección, usa la herramienta getSectionContent con el ID de la sección
-- Los IDs de las secciones son los valores del campo "id" (por ejemplo: "1378079")
-- Si el usuario pide información sobre "la sección 2" o "tema 2", busca la sección con sectionNumber: 2 y usa su ID
-- Responde de forma directa, útil y concisa
-- Si necesitas información sobre una sección específica, llama a getSectionContent para obtenerla antes de responder
-- Recuerda que NUNCA debes pedirle al usuario que te proporcione IDs, sino buscarlos tú mismo en la estructura del curso. El usuario no tiene esos IDs ni va a saber dártelos. La información que tienes es suficiente para encontrar los IDs necesarios.
+    - When the user mentions a section by title/name, find its ID in the sections list above. The user does not know IDs, only titles, so NEVER ask for an ID.
+    - To retrieve detailed section content, use the getSectionContent tool with the section ID.
+    - Section IDs are the values in the "id" field (for example: "1378079").
+    - If the user asks about "section 2" or "topic 2", locate the section with sectionNumber: 2 and use its ID.
+    - Respond in a direct, helpful, and concise way.
+    - If you need information from a specific section, call getSectionContent before answering.
+    - NEVER ask the user to provide IDs; always resolve them yourself from the available course structure.
 
 {exerciseContext}
 
@@ -198,17 +198,15 @@ COURSE INFORMATION:
 Below is the complete course structure with all available sections. Each section has a unique ID that you must use when you need to get its detailed content.
 
 {courseContext}
-
-{languageInstruction}`;
+`;
 
         // Variables to substitute in the template
         const variables = {
-            role: 'Agente basado en chat para ayudar a los estudiantes con el contenido y ejercicios de su curso en línea',
-            toolsDescription: 'Tienes acceso a las herramientas getSectionContent, getPageContent, getResourceContent, explainExercise y solveExercise para consultar material del curso y trabajar con ejercicios.',
+            role: 'a chat-based assistant that helps students with their online course content and exercises',
+            toolsDescription: 'You can use the tools getSectionContent, getPageContent, getResourceContent, explainExercise, and solveExercise to consult course materials and handle exercises.',
             exerciseContext: exerciseContext,
             exerciseResponseFormat: getLLMExerciseResponseInstructions(),
-            courseContext: courseContext,
-            languageInstruction: this.buildLanguageInstruction()
+            courseContext: courseContext
         };
 
         return this.buildPromptFromTemplate(template, variables);

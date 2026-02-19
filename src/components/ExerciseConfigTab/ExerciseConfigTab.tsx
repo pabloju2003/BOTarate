@@ -1,6 +1,8 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import ExerciseEditModal from "../ExerciseEditModal";
+import { ReasoningSelector, VerbositySelector } from "../LabConfigTab/selectors";
+import LabContextModal from "../LabContextModal";
 import { useExerciseConfig } from "./hooks";
 import { ExerciseConfigTabProps } from "./types";
 import { getDefaultFlags } from "./utils";
@@ -18,10 +20,15 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
         handleSaveChanges,
         editingExercise,
         setEditingExercise,
-        isAddingExercise,
-        setIsAddingExercise,
-        handleDeleteExercise,
         refreshExercises,
+        // Lab config
+        verbosity,
+        setVerbosity,
+        reasoningEffort,
+        setReasoningEffort,
+        hasContext,
+        contextModalOpen,
+        setContextModalOpen,
     } = useExerciseConfig(props);
 
     // Función auxiliar para renderizar HTML seguro
@@ -53,25 +60,7 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
                     </p>
                 </div>
 
-                {isInLab && (
-                    <div className="d-grid gap-2 mt-3">
-                        <button className="btn btn-primary" onClick={() => setIsAddingExercise(true)}>
-                            <i className="bi bi-plus-circle me-2"></i>
-                            {t("options.exerciseConfig.addExercise")}
-                        </button>
-                    </div>
-                )}
-
-                {/* Add Exercise Modal */}
-                {isAddingExercise && (
-                    <ExerciseEditModal
-                        isOpen={isAddingExercise}
-                        onClose={() => setIsAddingExercise(false)}
-                        labId={props.pageId}
-                        isAddMode={true}
-                        onExerciseUpdate={refreshExercises}
-                    />
-                )}
+                {/* No Add Exercise Button - Feature Removed */}
             </div>
         );
     }
@@ -91,21 +80,89 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
                 <p className="mb-0 small">{t("options.exerciseConfig.infoFooter")}</p>
             </div>
 
+            {/* Lab configuration: verbosity, reasoning, context */}
+            {props.courseId && (
+                <div className="card mb-3">
+                    <div className="card-body py-2">
+                        <VerbositySelector
+                            labId={props.pageId}
+                            currentVerbosity={verbosity}
+                            hasContext={hasContext}
+                            isDisabled={isSaving}
+                            onChange={(_labId, v) => setVerbosity(v)}
+                        />
+                        <ReasoningSelector
+                            labId={props.pageId}
+                            currentReasoning={reasoningEffort}
+                            hasContext={hasContext}
+                            isDisabled={isSaving}
+                            onChange={(_labId, r) => setReasoningEffort(r)}
+                        />
+                        <div className="d-flex align-items-center mt-2">
+                            <button
+                                className="btn btn-outline-primary btn-sm"
+                                onClick={() => setContextModalOpen(true)}
+                                disabled={isSaving || !hasContext}
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="14"
+                                    height="14"
+                                    fill="currentColor"
+                                    viewBox="0 0 16 16"
+                                    className="me-1"
+                                >
+                                    <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z" />
+                                </svg>
+                                {t("options.labConfig.editContext")}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="table-responsive">
                 <table className="table table-sm table-hover">
                     <thead>
                         <tr>
-                            <th scope="col" style={{ width: "60%" }}>
+                            <th
+                                scope="col"
+                                className="fw-bold"
+                                style={{
+                                    width: "60%",
+                                    backgroundColor: "#f8f9fa",
+                                    color: "black",
+                                    borderColor: "#dee2e6",
+                                    verticalAlign: "middle",
+                                }}
+                            >
                                 {t("options.exerciseConfig.table.headerName")}
                             </th>
-                            <th scope="col" className="text-center" style={{ width: "20%" }}>
+                            <th
+                                scope="col"
+                                className="text-center fw-bold"
+                                style={{
+                                    width: "20%",
+                                    backgroundColor: "#f8f9fa",
+                                    color: "black",
+                                    borderColor: "#dee2e6",
+                                    verticalAlign: "middle",
+                                }}
+                            >
                                 {t("options.exerciseConfig.table.headerChallenge")}
                             </th>
-                            <th scope="col" className="text-center" style={{ width: "20%" }}>
+                            <th
+                                scope="col"
+                                className="text-center fw-bold"
+                                style={{
+                                    width: "20%",
+                                    backgroundColor: "#f8f9fa",
+                                    color: "black",
+                                    borderColor: "#dee2e6",
+                                    verticalAlign: "middle",
+                                }}
+                            >
                                 {t("options.exerciseConfig.table.headerPicky")}
-                            </th>
-                            <th scope="col" className="text-center" style={{ width: "10%" }}>
-                                {t("options.exerciseConfig.table.headerActions")}
                             </th>
                         </tr>
                     </thead>
@@ -116,23 +173,32 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
                             const isPicky = flags.isPicky;
                             return (
                                 <tr key={exercise.name}>
-                                    <td>
+                                    <td style={{ verticalAlign: "middle" }}>
                                         <div className="d-flex align-items-center">
-                                            <span>{exercise.name}</span>
-                                            {isChallenge && (
-                                                <span className="badge bg-warning text-dark ms-2">
-                                                    {t("options.exerciseConfig.table.badgeChallenge")}
-                                                </span>
-                                            )}
-                                            {isPicky && (
-                                                <span className="badge bg-info text-dark ms-2">
-                                                    {t("options.exerciseConfig.table.badgePicky")}
-                                                </span>
-                                            )}
+                                            <span style={{ flex: 1 }}>{exercise.name}</span>
+                                            <div className="ms-2" onClick={e => e.stopPropagation()}>
+                                                <button
+                                                    className="btn btn-outline-primary btn-sm"
+                                                    onClick={() => setEditingExercise(exercise)}
+                                                    disabled={isSaving}
+                                                    title={t("options.exerciseConfig.editExercise")}
+                                                >
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        width="14"
+                                                        height="14"
+                                                        fill="currentColor"
+                                                        viewBox="0 0 16 16"
+                                                        className="me-1"
+                                                    >
+                                                        <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z" />
+                                                    </svg>
+                                                </button>
+                                            </div>
                                         </div>
                                     </td>
-                                    <td className="text-center">
-                                        <div className="form-check form-switch d-inline-block">
+                                    <td className="text-center" style={{ verticalAlign: "middle" }}>
+                                        <div className="d-flex justify-content-center align-items-center">
                                             <input
                                                 className="form-check-input"
                                                 type="checkbox"
@@ -141,7 +207,7 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
                                                 checked={isChallenge}
                                                 onChange={() => handleToggleChallenge(exercise.name)}
                                                 disabled={isSaving}
-                                                style={{ cursor: "pointer" }}
+                                                style={{ cursor: "pointer", margin: 0 }}
                                             />
                                             <label
                                                 className="form-check-label visually-hidden"
@@ -153,8 +219,8 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
                                             </label>
                                         </div>
                                     </td>
-                                    <td className="text-center">
-                                        <div className="form-check form-switch d-inline-block">
+                                    <td className="text-center" style={{ verticalAlign: "middle" }}>
+                                        <div className="d-flex justify-content-center align-items-center">
                                             <input
                                                 className="form-check-input"
                                                 type="checkbox"
@@ -163,7 +229,7 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
                                                 checked={isPicky}
                                                 onChange={() => handleTogglePicky(exercise.name)}
                                                 disabled={isSaving}
-                                                style={{ cursor: "pointer" }}
+                                                style={{ cursor: "pointer", margin: 0 }}
                                             />
                                             <label
                                                 className="form-check-label visually-hidden"
@@ -173,68 +239,6 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
                                                     ? t("options.exerciseConfig.table.switchPickyOn")
                                                     : t("options.exerciseConfig.table.switchPickyOff")}
                                             </label>
-                                        </div>
-                                    </td>
-                                    <td className="text-center">
-                                        <div className="d-flex gap-1 justify-content-center align-items-center">
-                                            <button
-                                                className="btn btn-outline-primary btn-sm"
-                                                onClick={() => setEditingExercise(exercise)}
-                                                disabled={isSaving}
-                                                title={t("common.edit")}
-                                                style={{
-                                                    padding: "0.25rem 0.5rem",
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    justifyContent: "center",
-                                                }}
-                                            >
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    width="14"
-                                                    height="14"
-                                                    fill="currentColor"
-                                                    viewBox="0 0 16 16"
-                                                >
-                                                    <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z" />
-                                                </svg>
-                                            </button>
-                                            <button
-                                                className="btn btn-outline-danger btn-sm"
-                                                onClick={() => {
-                                                    if (
-                                                        confirm(
-                                                            t("options.exerciseConfig.deleteConfirm", {
-                                                                name: exercise.name,
-                                                            }),
-                                                        )
-                                                    ) {
-                                                        handleDeleteExercise(exercise.name);
-                                                    }
-                                                }}
-                                                disabled={isSaving}
-                                                title={t("common.delete")}
-                                                style={{
-                                                    padding: "0.25rem 0.5rem",
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    justifyContent: "center",
-                                                }}
-                                            >
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    width="14"
-                                                    height="14"
-                                                    fill="currentColor"
-                                                    viewBox="0 0 16 16"
-                                                >
-                                                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"
-                                                    />
-                                                </svg>
-                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -250,13 +254,6 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
                     <p className="mb-0 mt-1">{t("options.exerciseConfig.unsavedDesc")}</p>
                 </div>
             )}
-
-            <div className="d-grid gap-2 mb-3">
-                <button className="btn btn-success" onClick={() => setIsAddingExercise(true)} disabled={isSaving}>
-                    <i className="bi bi-plus-circle me-2"></i>
-                    {t("options.exerciseConfig.addExercise")}
-                </button>
-            </div>
 
             <div className="d-grid gap-2">
                 <button
@@ -319,14 +316,14 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
                 />
             )}
 
-            {/* Add Exercise Modal */}
-            {isAddingExercise && (
-                <ExerciseEditModal
-                    isOpen={isAddingExercise}
-                    onClose={() => setIsAddingExercise(false)}
+            {/* Lab Context Modal */}
+            {contextModalOpen && (
+                <LabContextModal
+                    isOpen={contextModalOpen}
+                    onClose={() => setContextModalOpen(false)}
                     labId={props.pageId}
-                    isAddMode={true}
-                    onExerciseUpdate={refreshExercises}
+                    labName={props.pageName ?? ""}
+                    onContextUpdate={props.onConfigUpdate}
                 />
             )}
         </div>

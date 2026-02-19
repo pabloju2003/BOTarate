@@ -33,9 +33,8 @@
         "placeholder": {
             "disabledModal": "Chat deshabilitado (modal abierto)...",
             "teacherMode": "Cambia a modo alumno para usar el chat...",
-            "labBlocked": "Laboratorio bloqueado...",
             "loadingExercises": "Cargando ejercicios...",
-            "notConfigured": "Laboratorio no configurado por el profesor...",
+            "notConfigured": "BOTarate no está disponible para esa página.",
             "default": "Escribe tu pregunta..."
         },
         "welcome": {
@@ -45,24 +44,15 @@
             "genericHelper": "Estoy aquí para ayudarte con la asignatura."
         },
         "status": {
-            "checkingAccess": "Comprobando acceso al laboratorio...",
-            "labBlockedTitle": "Laboratorio bloqueado",
-            "labBlockedDesc": "Este laboratorio está bloqueado porque es un laboratorio obligatorio y aún no has completado el laboratorio anterior.",
-            "unlockTitle": "Para desbloquear este laboratorio:",
-            "unlockList": {
-                "complete": "Completa los ejercicios reto requeridos del laboratorio anterior",
-                "criteria": "Cumple los criterios definidos por tu profesor en las opciones de la extensión o consulta los detalles en \"Mi progreso\"",
-                "checkProgress": "Comprueba tu progreso en la pestaña \"Mi progreso\""
-            },
             "teacherModeTitle": "Modo profesor activo",
             "teacherModeDesc": "Estás en modo profesor. Para usar el agente de chat, debes cambiar a modo alumno.",
             "teacherModeAction": "Ve al interruptor de <strong>\"Modo\"</strong> para cambiar tu modo.",
             "loadingExercises": "Cargando...",
             "searchingExercises": "Buscando ejercicios...",
             "analyzingContent": "Analizando el contenido de la página para identificar ejercicios disponibles.",
-            "notConfiguredTitle": "Laboratorio no configurado",
-            "notConfiguredDesc": "El profesor aún no ha configurado este laboratorio. El chat está deshabilitado hasta que la configuración esté disponible.",
-            "notConfiguredAction": "Por favor, espera a que tu profesor configure este laboratorio o contáctalo para más información.",
+            "notConfiguredTitle": "BOTarate no disponible",
+            "notConfiguredDesc": "BOTarate no está disponible para esa página.",
+            "notConfiguredAction": "",
             "generating": "Generando respuesta..."
         },
         "roles": {
@@ -87,8 +77,14 @@
             "withName": "📦 Leyendo recurso \"{{name}}\"...",
             "generic": "📦 Leyendo recurso..."
         },
-        "explainExercise": "💡 Explicando ejercicio {{index}}...",
-        "solveExercise": "📝 Abriendo formulario de solución para ejercicio {{index}}...",
+        "explainExercise": {
+            "withName": "💡 Explicando ejercicio \"{{name}}\"...",
+            "default": "💡 Explicando ejercicio {{index}}..."
+        },
+        "solveExercise": {
+            "withName": "📝 Abriendo formulario de solución para ejercicio \"{{name}}\"...",
+            "default": "📝 Abriendo formulario de solución para ejercicio {{index}}..."
+        },
         "getFilteredFileContent": "🔍 Buscando en archivo...",
         "analyzeImage": {
             "withName": "🖼️ Analizando imagen \"{{name}}\"...",
@@ -111,11 +107,8 @@
             "chat": "Chat",
             "exercises": "Ejercicios",
             "progress": "Mi progreso",
-            "configureCourse": "Configurar asignatura",
+            "configureCourse": "Configurar sección",
             "configureLab": "Configurar laboratorio"
-        },
-        "tooltips": {
-            "labBlocked": "No disponible mientras el laboratorio esté bloqueado"
         },
         "checkingConfig": "Comprobando configuración...",
         "courseLoadError": "Error al cargar la asignatura",
@@ -163,7 +156,6 @@
         "tabs": {
             "llm": "Configuración LLM",
             "agents": "Prompts",
-            "progress": "Progreso",
             "importExport": "Importar/Exportar"
         },
         "llm": {
@@ -210,6 +202,10 @@
                 "exerciseCriteria": {
                     "label": "Identificación de ejercicios",
                     "desc": "Criterios para identificar qué constituye un ejercicio y cómo debe extraerse"
+                },
+                "excludedExercises": {
+                    "label": "Ejercicios a excluir",
+                    "desc": "Descripción de los tipos o patrones de ejercicios que NO deben incluirse (por ejemplo: 'preparación del laboratorio' o 'soluciones de ejercicios')."
                 },
                 "role": {
                     "label": "Rol",
@@ -264,15 +260,15 @@
             "noLabOpenDesc": "Debes abrir un laboratorio primero para poder añadir o configurar ejercicios.",
             "table": {
                 "headerName": "Nombre del ejercicio",
-                "headerChallenge": "Es solo estudiante",
-                "headerPicky": "Es falso amigo",
+                "headerChallenge": "Solo estudiante",
+                "headerPicky": "Falso amigo",
                 "headerActions": "Acciones",
                 "badgeChallenge": "Solo estudiante",
                 "badgePicky": "Falso amigo",
-                "switchChallengeOn": "Es solo estudiante",
-                "switchChallengeOff": "No es solo estudiante",
-                "switchPickyOn": "Es falso amigo",
-                "switchPickyOff": "No es falso amigo"
+                "switchChallengeOn": "Solo estudiante",
+                "switchChallengeOff": "No solo estudiante",
+                "switchPickyOn": "Falso amigo",
+                "switchPickyOff": "No falso amigo"
             },
             "unsavedTitle": "⚠️ Tienes cambios sin guardar",
             "unsavedDesc": "Haz clic en \"Guardar cambios\" para aplicar la configuración y regenerar el agente.",
@@ -286,17 +282,17 @@
             "loading": "Cargando laboratorios...",
             "noLabsTitle": "No hay laboratorios disponibles",
             "noLabsDesc": "No se encontraron recursos tipo 'página' en la asignatura que puedan configurarse como laboratorios.",
+            "noLabsInSectionTitle": "No hay laboratorios en esta sección",
+            "noLabsInSectionDesc": "Esta sección no contiene recursos tipo 'página' que puedan configurarse como laboratorios.",
             "infoTitle": "Configuración de la asignatura",
-            "infoDesc": "Configura qué laboratorios incluir y sus opciones de <strong>nivel requerido</strong>, <strong>verbosidad</strong> y <strong>razonamiento</strong>.",
+            "infoDesc": "Configura qué laboratorios incluir y sus opciones de <strong>verbosidad</strong> y <strong>razonamiento</strong>.",
             "infoList": {
                 "include": "<strong>Incluir laboratorio:</strong> Habilita esto para analizar el laboratorio y extraer ejercicios. Es necesario antes de poder usar otras configuraciones.",
-                "required": "<strong>Laboratorio requerido:</strong> Los laboratorios marcados como requeridos se desbloquearán secuencialmente cuando el estudiante complete los desafíos del anterior.",
                 "verbosity": "<strong>Nivel de verbosidad:</strong> Controla el nivel de detalle en las explicaciones del agente (bajo, medio o alto).",
                 "reasoning": "<strong>Esfuerzo de razonamiento:</strong> Configura cuánto detalle debe poner el agente en explicar su razonamiento (mínimo, bajo, medio o alto)."
             },
             "infoFooter": "Haz clic en un laboratorio incluido para expandir sus opciones de configuración.",
             "includeLabel": "Incluir",
-            "requiredLabel": "Laboratorio requerido",
             "explanationConfig": "Configuración del agente de explicación:",
             "goToLab": "Ir al laboratorio",
             "unsavedTitle": "⚠️ Tienes cambios sin guardar",
@@ -323,7 +319,9 @@
                 "reasoningMedium": "Razonamiento moderado",
                 "reasoningHigh": "Razonamiento detallado paso a paso"
             },
-            "editContext": "Ver / Editar contexto",
+            "editContext": "Contexto",
+            "regenerateContext": "Regenerar contexto",
+            "regenerating": "Regenerando...",
             "exercisesTitle": "Ejercicios:",
             "noExercises": "No hay ejercicios en este laboratorio.",
             "addExercise": "Añadir ejercicio",
@@ -366,29 +364,15 @@
             "name": "Nombre del ejercicio",
             "namePlaceholder": "Introduce el nombre del ejercicio...",
             "statement": "Enunciado",
-            "statementPlaceholder": "Introduce el enunciado del ejercicio..."
-        },
-        "progress": {
-            "loading": "Cargando configuración de progreso...",
-            "globalTitle": "Criterios globales de progreso",
-            "info": {
-                "title": "Configurar criterios para desbloquear laboratorios",
-                "desc": "Ajusta la puntuación mínima y el porcentaje de ejercicios aprobados necesarios para progresar."
+            "statementPlaceholder": "Introduce el enunciado del ejercicio...",
+            "success": {
+                "added": "Ejercicio añadido correctamente.",
+                "updated": "Ejercicio actualizado correctamente."
             },
-            "minScore": {
-                "label": "Puntuación mínima para aprobar un ejercicio de desafío",
-                "help": "Los desafíos con una puntuación igual o superior a este valor se considerarán aprobados."
-            },
-            "minPercentage": {
-                "label": "Porcentaje mínimo de desafíos aprobados para progresar",
-                "help": "Ejemplo: con un 75%, si un laboratorio tiene 4 desafíos, al menos 3 deben aprobarse para desbloquear el siguiente."
-            },
-            "save": "Guardar criterios",
-            "saving": "Guardando...",
-            "restore": "Restaurar valores por defecto",
-            "errorLoad": "No se pudo cargar la configuración. Por favor, inténtelo de nuevo.",
-            "successSave": "Criterios de progreso guardados correctamente.",
-            "errorSave": "No se pudo guardar. Verifique los valores e inténtelo de nuevo."
+            "errors": {
+                "nameRequired": "El nombre es obligatorio.",
+                "saveError": "Error al guardar el ejercicio."
+            }
         },
         "importExport": {
             "export": {
@@ -407,7 +391,11 @@
                 "title": "Zona de peligro",
                 "description": "Eliminar permanentemente todos los datos almacenados por la extensión. Esta acción no se puede deshacer.",
                 "button": "Eliminar todos los datos",
-                "processing": " Eliminando..."
+                "processing": " Eliminando...",
+                "clearContextTitle": "Limpiar contexto de laboratorios",
+                "clearContextDescription": "Elimina solo el contexto generado de los laboratorios (ejercicios y datos identificados). Los prompts de agentes y otra configuración se mantendrán.",
+                "clearContextButton": "Limpiar contexto de laboratorios",
+                "clearContextProcessing": " Limpiando..."
             },
             "messages": {
                 "exportSuccess": "Configuración exportada correctamente",
@@ -417,11 +405,14 @@
                 "importJsonError": "El archivo no contiene un JSON válido.",
                 "invalidFile": "Por favor, selecciona un archivo JSON válido.",
                 "clearSuccess": "Todos los datos han sido eliminados correctamente",
+                "clearContextSuccess": "El contexto de los laboratorios ha sido eliminado correctamente",
                 "exportError": "Error inesperado al exportar: {{error}}",
                 "importError": "Error inesperado al importar: {{error}}",
-                "clearError": "Error inesperado al limpiar: {{error}}"
+                "clearError": "Error inesperado al limpiar: {{error}}",
+                "clearContextError": "Error inesperado al limpiar el contexto: {{error}}"
             },
-            "confirmClear": "⚠️ ADVERTENCIA: Esta acción eliminará TODA la configuración guardada, incluyendo:\n\n- Configuración de agentes\n- Datos de ejercicios identificados\n- Datos de laboratorios configurados\n\nEsta acción NO SE PUEDE deshacer. ¿Estás seguro de que deseas continuar?"
+            "confirmClear": "⚠️ ADVERTENCIA: Esta acción eliminará TODA la configuración guardada, incluyendo:\n\n- Configuración de agentes\n- Datos de ejercicios identificados\n- Datos de laboratorios configurados\n\nEsta acción NO SE PUEDE deshacer. ¿Estás seguro de que deseas continuar?",
+            "confirmClearContext": "⚠️ ADVERTENCIA: Esta acción eliminará SOLO el contexto de los laboratorios (ejercicios e información identificada):\n\n- Datos de ejercicios identificados\n- Datos de laboratorios configurados\n\nLos prompts de agentes y otra configuración se mantendrán.\n\nEsta acción NO SE PUEDE deshacer. ¿Estás seguro de que deseas continuar?"
         },
         "devMode": {
             "title": "Opciones de desarrollo",
@@ -526,32 +517,18 @@
     },
     "progress": {
         "title": "Progreso",
-        "completed": "Completado",
-        "pending": "Pendiente",
         "labs": "Laboratorios",
         "exercises": "Ejercicios",
         "score": "Puntuación",
         "loading": "Cargando progreso...",
         "noLabsTitle": "No hay laboratorios configurados",
-        "noLabsDesc": "El profesor aún no ha configurado el sistema de laboratorios y progresión para esta asignatura.",
-        "infoTitle": "Sistema de progresión",
-        "infoDesc": "Los laboratorios se desbloquean secuencialmente. Para acceder a un laboratorio, debes completar los <strong>ejercicios de reto</strong> del laboratorio anterior según los criterios definidos por tu profesor.",
-        "infoList": {
-            "challenge": "<strong>Ejercicios de reto:</strong> No pueden ser explicados por la IA, pero pueden ser evaluados cuando envías tu solución.",
-            "score": "<strong>Puntuación registrada:</strong> Se guarda tu mejor puntuación para cada ejercicio.",
-            "required": "<strong>Solo laboratorios requeridos:</strong> Esta vista muestra solo los laboratorios marcados como requeridos por el profesor, que deben completarse para avanzar."
-        },
-        "criteriaTitle": "Criterios actuales:",
-        "minScore": "Puntuación mínima por reto: {{score}} / 10",
-        "minPercentage": "Porcentaje mínimo de retos aprobados: {{percentage}}% de los retos totales del laboratorio",
+        "noLabsDesc": "El profesor aún no ha configurado los laboratorios para esta asignatura.",
         "labCard": {
-            "title": "Lab {{index}}: {{name}}",
+            "title": "{{name}}",
+            "exercisesTitle": "Ejercicios:",
             "exercises": "Ejercicios: {{completed}} / {{total}}",
             "average": "Puntuación media: {{score}}",
-            "challengesTitle": "Ejercicios de reto:",
-            "notAttempted": "No intentado",
-            "noChallenges": "No hay ejercicios de reto en este laboratorio.",
-            "locked": "Laboratorio bloqueado. Completa el laboratorio anterior siguiendo los criterios configurados."
+            "notAttempted": "No intentado"
         }
     },
     "errors": {
@@ -570,7 +547,6 @@
         "languageInstruction": "Responde siempre en español.",
         "progressSummary": {
             "noProgress": "El alumno aún no ha completado ningún laboratorio ni ejercicio.",
-            "completedLabs": "Laboratorios completados",
             "completedExercises": "Ejercicios completados por laboratorio"
         }
     }

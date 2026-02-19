@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ImportExportTab } from "../components/ImportExportTab";
-import ProgressConfigTab from "../components/ProgressConfigTab";
 import { APP_CONFIG } from "../constants";
 import "../content/bootstrap.css";
 import { AVAILABLE_LANGUAGES, changeLanguage, type LanguageCode } from "../i18n";
@@ -17,7 +16,7 @@ interface CourseInfo {
     name: string;
 }
 
-type TabType = "llm" | "agents" | "progress" | "import-export";
+type TabType = "llm" | "agents" | "import-export";
 type AgentSection = "general" | "exercise" | "evaluation" | "explanation";
 
 // Componentes reutilizables para campos de configuración
@@ -106,53 +105,52 @@ const Options: React.FC = () => {
     };
 
     // Validación y carga de modelos/API key
-    const validateAndLoadModels = (
+    const validateAndLoadModels = async (
         providerIndex: number,
         modelToPreselect?: string,
         visionModelToPreselect?: string,
         apiKeyValue?: string,
-    ) => {
+    ): Promise<void> => {
         setModelList([]);
         setModelListEnabled(false);
         setApiKeyError("");
         if (typeof apiKeyValue === "string") {
             ConfigManager.setProviderKey(providerIndex, apiKeyValue);
         }
-        OpenAIService.getModelList(ConfigManager.getProvider(providerIndex))
-            .then(list => {
-                const cleanList = list.map(m => m.replace("models/", ""));
-                setModelList(cleanList);
+        try {
+            const list = await OpenAIService.getModelList(ConfigManager.getProvider(providerIndex));
+            const cleanList = list.map(m => m.replace("models/", ""));
+            setModelList(cleanList);
 
-                // Select text model
-                const cleanModelToPreselect = modelToPreselect?.replace("models/", "") || "";
-                const textModels = cleanList.filter(m => ConfigManager.TEXT_MODELS.includes(m));
-                const modelToSelect =
-                    cleanModelToPreselect && textModels.includes(cleanModelToPreselect)
-                        ? cleanModelToPreselect
-                        : textModels[0] || "";
-                setSelectedModel(modelToSelect);
+            // Select text model
+            const cleanModelToPreselect = modelToPreselect?.replace("models/", "") || "";
+            const textModels = cleanList.filter(m => ConfigManager.TEXT_MODELS.includes(m));
+            const modelToSelect =
+                cleanModelToPreselect && textModels.includes(cleanModelToPreselect)
+                    ? cleanModelToPreselect
+                    : textModels[0] || "";
+            setSelectedModel(modelToSelect);
 
-                // Select vision model
-                const cleanVisionModelToPreselect = visionModelToPreselect?.replace("models/", "") || "";
-                const visionModels = cleanList.filter(m => ConfigManager.VISION_MODELS.includes(m));
-                const visionModelToSelect =
-                    cleanVisionModelToPreselect && visionModels.includes(cleanVisionModelToPreselect)
-                        ? cleanVisionModelToPreselect
-                        : visionModels[0] || "";
-                setSelectedVisionModel(visionModelToSelect);
+            // Select vision model
+            const cleanVisionModelToPreselect = visionModelToPreselect?.replace("models/", "") || "";
+            const visionModels = cleanList.filter(m => ConfigManager.VISION_MODELS.includes(m));
+            const visionModelToSelect =
+                cleanVisionModelToPreselect && visionModels.includes(cleanVisionModelToPreselect)
+                    ? cleanVisionModelToPreselect
+                    : visionModels[0] || "";
+            setSelectedVisionModel(visionModelToSelect);
 
-                setModelListEnabled(true);
+            setModelListEnabled(true);
+            setApiKeyError("");
+        } catch (e) {
+            setModelList([]);
+            setModelListEnabled(false);
+            if ((apiKeyValue ?? apiKey).trim()) {
+                setApiKeyError("Invalid API key. Please enter a valid API key to view models.");
+            } else {
                 setApiKeyError("");
-            })
-            .catch(e => {
-                setModelList([]);
-                setModelListEnabled(false);
-                if ((apiKeyValue ?? apiKey).trim()) {
-                    setApiKeyError("Invalid API key. Please enter a valid API key to view models.");
-                } else {
-                    setApiKeyError("");
-                }
-            });
+            }
+        }
     };
 
     // Cargar configuración inicial: cursos y LLM (global)
@@ -182,14 +180,14 @@ const Options: React.FC = () => {
             await ConfigManager.loadConfig();
 
             const currentProvider = ConfigManager.getSelectedProvider();
-            const providerIndex = ConfigManager.getProviderList().indexOf(currentProvider.name);
-            setSelectedProvider(Math.max(providerIndex, 0));
+            const providerIndex = Math.max(ConfigManager.getProviderList().indexOf(currentProvider.name), 0);
+            setSelectedProvider(providerIndex);
             setApiKey(currentProvider.key || "");
 
             const savedModel = ConfigManager.getSelectedModel();
             const savedVisionModel = ConfigManager.getSelectedVisionModel();
 
-            validateAndLoadModels(providerIndex, savedModel, savedVisionModel, currentProvider.key);
+            await validateAndLoadModels(providerIndex, savedModel, savedVisionModel, currentProvider.key);
 
             setIsConfigLoaded(true);
         };
@@ -228,7 +226,7 @@ const Options: React.FC = () => {
                 if (!userIsTeacher) {
                     await ModeManager.setMode(AppMode.STUDENT);
                     // Si está en un tab de profesor, cambiar a import-export
-                    if (activeTab === "agents" || activeTab === "progress") {
+                    if (activeTab === "agents") {
                         setActiveTab("import-export");
                     }
                 }
@@ -276,13 +274,13 @@ const Options: React.FC = () => {
         setSelectedProvider(providerIndex);
         const newApiKey = ConfigManager.getProvider(providerIndex).key || "";
         setApiKey(newApiKey);
-        validateAndLoadModels(providerIndex, undefined, undefined, newApiKey);
+        void validateAndLoadModels(providerIndex, selectedModel, selectedVisionModel, newApiKey);
     };
 
     // Validar la API key cada vez que cambia
     useEffect(() => {
         if (!isConfigLoaded) return;
-        validateAndLoadModels(selectedProvider, undefined, undefined, apiKey);
+        void validateAndLoadModels(selectedProvider, selectedModel, selectedVisionModel, apiKey);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [apiKey, selectedProvider]);
 
@@ -460,6 +458,13 @@ const Options: React.FC = () => {
                             description={t("options.agents.fields.exerciseCriteria.desc")}
                             rows={6}
                         />
+                        <ConfigTextArea
+                            label={t("options.agents.fields.excludedExercises.label")}
+                            value={agentConfig.exerciseAgent.excludedExercises}
+                            onChange={value => updateAgentField("exerciseAgent", "excludedExercises", value)}
+                            description={t("options.agents.fields.excludedExercises.desc")}
+                            rows={4}
+                        />
                     </div>
                 );
             case "evaluation":
@@ -535,21 +540,6 @@ const Options: React.FC = () => {
             default:
                 return null;
         }
-    };
-
-    const renderProgressTab = () => {
-        if (!isUserTeacher) return null;
-
-        return (
-            <div className="card mb-4">
-                <div className="card-header">
-                    <h5 className="card-title mb-0">{t("options.progress.globalTitle")}</h5>
-                </div>
-                <div className="card-body">
-                    <ProgressConfigTab isActive={activeTab === "progress"} courseId={selectedCourseId || undefined} />
-                </div>
-            </div>
-        );
     };
 
     return (
@@ -649,16 +639,6 @@ const Options: React.FC = () => {
                                         onClick={() => setActiveTab("agents")}
                                     >
                                         {t("options.tabs.agents")}
-                                    </button>
-                                </li>
-                            )}
-                            {isUserTeacher && (
-                                <li className="nav-item">
-                                    <button
-                                        className={`nav-link ${activeTab === "progress" ? "active" : ""}`}
-                                        onClick={() => setActiveTab("progress")}
-                                    >
-                                        {t("options.tabs.progress")}
                                     </button>
                                 </li>
                             )}
@@ -870,8 +850,6 @@ const Options: React.FC = () => {
                             </div>
                         </div>
                     )}
-
-                    {activeTab === "progress" && renderProgressTab()}
 
                     {/* Contenido de Importar/Exportar */}
                     {activeTab === "import-export" && (

@@ -157,6 +157,10 @@ export const useExerciseModal = ({
             const response = await chrome.runtime.sendMessage({
                 action: "sendExplanationChatMessage",
                 message: chatInput,
+                pageId: pageId,
+                exerciseName: exercise.name,
+                courseId: courseId,
+                chatHistory: chatMessages,
             });
 
             if (response.success) {

@@ -146,6 +146,46 @@ export const useImportExport = ({ courseId, onDataChange }: ImportExportTabProps
         }
     };
 
+    /**
+     * Limpia solo el contexto de laboratorios
+     */
+    const handleClearLabContext = async () => {
+        const confirmed = confirm(
+            t('options.importExport.confirmClearContext', "⚠️ WARNING: This action will delete ONLY the lab context (exercises and identified information):\n\n- Identified exercise data\n- Configured lab data\n\nAgent prompts and other settings will be preserved.\n\nThis action CANNOT be undone. Are you sure you want to continue?")
+        );
+
+        if (!confirmed) return;
+
+        setIsProcessing(true);
+        setMessage(null);
+
+        try {
+            const result = await ImportExportManager.clearLabContextOnly(courseId);
+            let text = "";
+            if (result.success) {
+                text = t('options.importExport.messages.clearContextSuccess', 'Lab context has been deleted successfully');
+            } else {
+                text = t('options.importExport.messages.clearContextError', 'Unexpected error clearing context: {{error}}', { error: result.message });
+            }
+
+            setMessage({
+                text,
+                type: result.success ? "info" : "error",
+            });
+            if (result.success && onDataChange) {
+                onDataChange();
+            }
+        } catch (error) {
+            console.error("Error clearing lab context:", error);
+            setMessage({
+                text: t('options.importExport.messages.clearContextError', 'Unexpected error clearing context: {{error}}', { error: error instanceof Error ? error.message : "Unknown error" }),
+                type: "error",
+            });
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
     return {
         message,
         isProcessing,
@@ -153,6 +193,7 @@ export const useImportExport = ({ courseId, onDataChange }: ImportExportTabProps
         handleExport,
         handleImport,
         handleClearAll,
+        handleClearLabContext,
         handleFileSelect,
         setMessage,
     };

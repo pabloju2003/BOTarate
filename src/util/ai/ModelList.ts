@@ -49,6 +49,27 @@ export const MODEL_LIST: ModelConfig[] = [
         supportsVision: true,
         supportsVerbosity: false,
         supportsReasoning: false
+    },
+    {
+        name: "google/gemini-3-flash-preview",
+        supportsText: true,
+        supportsVision: true,
+        supportsVerbosity: false,
+        supportsReasoning: false
+    },
+    {
+        name: "openai/gpt-5-mini",
+        supportsText: true,
+        supportsVision: true,
+        supportsVerbosity: false,
+        supportsReasoning: false
+    },
+    {
+        name: "moonshotai/kimi-k2.5",
+        supportsText: true,
+        supportsVision: false,
+        supportsVerbosity: false,
+        supportsReasoning: false
     }
 ];
 

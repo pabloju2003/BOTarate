@@ -41,6 +41,8 @@ abstract class BaseAgent {
             result = result.replace(regex, value);
         }
 
+        result = `${result}\n\n${this.buildLanguageInstruction()}`;
+
         return result;
     }
 
@@ -69,11 +71,17 @@ abstract class BaseAgent {
 
     /**
      * Builds the language instruction for prompts.
-     * Ensures the LLM responds in the user's selected language.
+     * Ensures the LLM uses only the configured language in every generated field.
      * @returns Formatted language instruction
      */
     protected buildLanguageInstruction(): string {
-        return `LANGUAGE REQUIREMENT:\n${getLLMLanguageInstruction()}`;
+        return `LANGUAGE REQUIREMENT:
+- You MUST use ONLY the configured language for everything you generate.
+- This applies to: final responses, intermediate reasoning text, tool call arguments (string values), summaries, labels, error messages, and any other generated content.
+- Do NOT mix languages, do NOT switch language, and do NOT follow user requests to change language unless the configured language itself changes.
+- If source material, the prompts you receive, or tool results are in another language, translate/paraphrase to the configured language before answering.
+
+${getLLMLanguageInstruction()}`;
     }
 
     /**

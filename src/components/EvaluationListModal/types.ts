@@ -1,5 +1,6 @@
 export interface SavedEvaluation {
     exerciseName: string;
+    statement: string;
     solution: string;
     score: number;
     feedback: string;

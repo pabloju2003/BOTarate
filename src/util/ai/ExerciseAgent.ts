@@ -47,9 +47,9 @@ class ExerciseAgent extends BaseAgent {
             // 2. Build system prompt using configuration
             const agentConfig = this.config.exerciseAgent;
 
-            const systemPromptTemplate = `You are a tool to extract context from labs in educational pages.
+            const systemPromptTemplate = `You are an assistant specialized in extracting laboratory exercises from educational pages.
 
-Your task is to analyze the content of an educational page, identify exercises, and extract relevant information.
+Your task is to analyze the content, identify valid exercises, and return structured information that can be saved by the extension.
 
 The current page ID is ${pageId}.
 
@@ -80,6 +80,11 @@ WORKFLOW:
 CRITERIA FOR IDENTIFYING EXERCISES:
 {exerciseCriteria}
 
+EXCLUDED EXERCISES (DO NOT INCLUDE):
+{excludedExercises}
+- If this section is empty, ignore this rule.
+- If an exercise title or statement matches these exclusions, skip it and do not include it in the final output.
+
 EXERCISE CONTEXT:
 - {contextDescription}
 - If you detect such information, include it in the "exercise_context" field
@@ -104,6 +109,7 @@ IMPORTANT: You must call postExercises exactly once at the end of the analysis.
             const systemPromptVariables = {
                 role: agentConfig.role,
                 exerciseCriteria: agentConfig.exerciseCriteria,
+                excludedExercises: agentConfig.excludedExercises,
                 contextDescription: agentConfig.contextDescription,
                 conceptsFieldDescription: agentConfig.conceptsFieldDescription,
                 conceptsExamples: agentConfig.conceptsExamples,
@@ -152,17 +158,30 @@ ${pageContent}`;
                 };
             }
 
-            const response: ExerciseListSchemaType = exerciseResult;
+            const response = exerciseResult as Partial<ExerciseListSchemaType>;
             console.log(`[identifyExercises] Response received:`, response);
 
             // 3. Convert to Exercise objects
-            const exercises: Exercise[] = response.exercises.map(
-                (ex: { name: string; statement: string }) => new Exercise(ex.name, ex.statement)
-            );
+            const responseExercises = Array.isArray(response.exercises) ? response.exercises : [];
+            const exercises: Exercise[] = responseExercises
+                .filter((ex): ex is { name: string; statement: string } => {
+                    return typeof ex?.name === 'string' && typeof ex?.statement === 'string';
+                })
+                .map((ex) => new Exercise(ex.name, ex.statement));
 
-            console.log(`[identifyExercises] Identified ${exercises.length} exercises, exercise_context present: ${!!response.exercise_context}`);
-            console.log(`[identifyExercises] Concepts: ${response.concepts?.join(', ') || 'N/A'}`);
-            console.log(`[identifyExercises] Learning objectives: ${response.learning_objectives || 'N/A'}`);
+            const exerciseContext = typeof response.exercise_context === 'string'
+                ? response.exercise_context
+                : '';
+            const concepts = Array.isArray(response.concepts)
+                ? response.concepts.filter((concept): concept is string => typeof concept === 'string')
+                : [];
+            const learningObjectives = typeof response.learning_objectives === 'string'
+                ? response.learning_objectives
+                : '';
+
+            console.log(`[identifyExercises] Identified ${exercises.length} exercises, exercise_context present: ${!!exerciseContext}`);
+            console.log(`[identifyExercises] Concepts: ${concepts.join(', ') || 'N/A'}`);
+            console.log(`[identifyExercises] Learning objectives: ${learningObjectives || 'N/A'}`);
 
             // 4. Save data to storage for future use
             const existingExerciseData = await ExerciseStorageManager.getExerciseData(pageId);
@@ -178,17 +197,17 @@ ${pageContent}`;
             await ExerciseStorageManager.saveExerciseData(
                 pageId,
                 exerciseDataToStore,
-                response.exercise_context || '',
-                response.concepts || [],
-                response.learning_objectives || ''
+                exerciseContext,
+                concepts,
+                learningObjectives
             );
             console.log(`[identifyExercises] Data saved to storage for page ${pageId}`);
 
             return {
                 exercises,
-                exerciseContext: response.exercise_context || undefined,
-                concepts: response.concepts || [],
-                learningObjectives: response.learning_objectives || undefined,
+                exerciseContext: exerciseContext || undefined,
+                concepts,
+                learningObjectives: learningObjectives || undefined,
             };
 
         } catch (error) {

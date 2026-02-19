@@ -39,8 +39,6 @@ interface ChatTabProps {
     inputValue: string;
     isGenerating: boolean;
     isChatDisabled: boolean;
-    isCheckingBlocked: boolean;
-    isLabBlocked: boolean;
     isLoadingExercises: boolean;
     pageId?: string;
     hasExercisesLoaded?: boolean;
@@ -56,7 +54,7 @@ interface ChatTabProps {
 }
 
 // Helper para traducir mensajes de herramientas
-const useToolMessageTranslator = () => {
+const useToolMessageTranslator = (exercises?: Exercise[]) => {
     const { t } = useTranslation();
 
     const getToolFriendlyMessage = (toolCall: ToolCall): string | null => {
@@ -89,11 +87,37 @@ const useToolMessageTranslator = () => {
                     : t("tools.getResource.generic", { defaultValue: "📦 Reading resource..." });
             case "explainExercise": {
                 const index = args.index || args.exerciseIndex;
-                return t("tools.explainExercise", { index: index, defaultValue: `💡 Explaining exercise ${index}...` });
+                // Preferir mostrar el nombre del ejercicio si está disponible
+                if (index && exercises) {
+                    const idx0 = Number(index) - 1;
+                    const ex = exercises[idx0];
+                    if (ex && ex.name) {
+                        return t("tools.explainExercise.withName", {
+                            name: ex.name,
+                            defaultValue: `💡 Explaining exercise "${ex.name}"...`,
+                        });
+                    }
+                }
+
+                return t("tools.explainExercise.default", {
+                    index: index,
+                    defaultValue: `💡 Explaining exercise ${index}...`,
+                });
             }
             case "solveExercise": {
                 const index = args.index || args.exerciseIndex;
-                return t("tools.solveExercise", {
+                if (index && exercises) {
+                    const idx0 = Number(index) - 1;
+                    const ex = exercises[idx0];
+                    if (ex && ex.name) {
+                        return t("tools.solveExercise.withName", {
+                            name: ex.name,
+                            defaultValue: `📝 Opening solution form for exercise "${ex.name}"...`,
+                        });
+                    }
+                }
+
+                return t("tools.solveExercise.default", {
                     index: index,
                     defaultValue: `📝 Opening solution form for exercise ${index}...`,
                 });
@@ -147,8 +171,6 @@ const ChatTab: React.FC<ChatTabProps> = ({
     inputValue,
     isGenerating,
     isChatDisabled,
-    isCheckingBlocked,
-    isLabBlocked,
     isLoadingExercises,
     pageId,
     hasExercisesLoaded,
@@ -163,7 +185,7 @@ const ChatTab: React.FC<ChatTabProps> = ({
     inputRef,
 }) => {
     const { t } = useTranslation();
-    const { getToolFriendlyMessage } = useToolMessageTranslator();
+    const { getToolFriendlyMessage } = useToolMessageTranslator(exercises);
 
     // Efecto: enfocar el input cuando deja de estar deshabilitado
     useEffect(() => {
@@ -177,7 +199,6 @@ const ChatTab: React.FC<ChatTabProps> = ({
     const getChatPlaceholder = () => {
         if (isAnyModalOpen) return t("chatTab.placeholder.disabledModal", "Chat disabled (modal open)...");
         if (isTeacherMode) return t("chatTab.placeholder.teacherMode", "Switch to student mode to use the chat...");
-        if (isLabBlocked) return t("chatTab.placeholder.labBlocked", "Lab blocked...");
         if (isLoadingExercises) return t("chatTab.placeholder.loadingExercises", "Loading exercises...");
         if (pageId && !hasExercisesLoaded)
             return t("chatTab.placeholder.notConfigured", "Lab not configured by teacher...");
@@ -223,55 +244,7 @@ const ChatTab: React.FC<ChatTabProps> = ({
                     gap: "12px",
                 }}
             >
-                {isCheckingBlocked ? (
-                    <div className="card border-primary">
-                        <div className="card-body p-3">
-                            <div className="d-flex align-items-center mb-2">
-                                <div className="spinner-border spinner-border-sm text-primary me-2">
-                                    <span className="visually-hidden">{t("common.loading", "Loading...")}</span>
-                                </div>
-                                <strong>{t("chatTab.status.checkingAccess", "Checking lab access...")}</strong>
-                            </div>
-                        </div>
-                    </div>
-                ) : isLabBlocked ? (
-                    <div className="alert alert-danger" role="alert">
-                        <h5 className="alert-heading">
-                            <i className="bi bi-lock-fill me-2"></i>
-                            {t("chatTab.status.labBlockedTitle", "Lab blocked")}
-                        </h5>
-                        <p>
-                            {t(
-                                "chatTab.status.labBlockedDesc",
-                                "This lab is blocked because it is a required lab and you have not yet completed the previous lab.",
-                            )}
-                        </p>
-                        <hr />
-                        <p className="mb-0">
-                            <strong>{t("chatTab.status.unlockTitle", "To unlock this lab:")}</strong>
-                        </p>
-                        <ul className="mb-0 mt-2">
-                            <li>
-                                {t(
-                                    "chatTab.status.unlockList.complete",
-                                    "Complete the required challenge exercises from the previous lab",
-                                )}
-                            </li>
-                            <li>
-                                {t(
-                                    "chatTab.status.unlockList.criteria",
-                                    'Meet the criteria defined by your teacher in the extension options or check the details in "My progress"',
-                                )}
-                            </li>
-                            <li>
-                                {t(
-                                    "chatTab.status.unlockList.checkProgress",
-                                    'Check your progress in the "My progress" tab',
-                                )}
-                            </li>
-                        </ul>
-                    </div>
-                ) : isTeacherMode ? (
+                {isTeacherMode ? (
                     <div className="alert alert-info" role="alert">
                         <h5 className="alert-heading">
                             <i className="bi bi-info-circle-fill me-2"></i>

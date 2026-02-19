@@ -1,11 +1,11 @@
 import { t } from "../../i18n/backend";
+import type { Lab } from "../../types/shared";
 import { Course } from "../../util/egela/Course";
 import { Exercise } from "../../util/egela/Exercise";
 import { EvaluationStorageManager } from "../../util/storage/EvaluationStorageManager";
 import { ExerciseStorageManager } from "../../util/storage/ExerciseStorageManager";
 import { ExplanationStorageManager } from "../../util/storage/ExplanationStorageManager";
-import { Lab, LabStorageManager } from "../../util/storage/LabStorageManager";
-import { ProgressConfigStorageManager } from "../../util/storage/ProgressConfigStorageManager";
+import { LabStorageManager } from "../../util/storage/LabStorageManager";
 import { createExerciseAgent, getCourseAgent, getEvaluationAgent, getExerciseAgent, getExplanationAgent, initializeAgents } from "../context";
 
 let cachedCourse: Course;
@@ -32,7 +32,7 @@ export function handleGetCourseData(request: any, sendResponse: (response?: any)
                 evaluationAgent.setCourse(course);
 
                 await courseAgent.loadChatHistory();
-                await initializeLabDataIfNeeded(course);
+                await initializeLabDataIfNeeded(course, href);
 
                 sendResponse({ success: true, course: course });
                 console.log('[background] Curso cargado:', course);
@@ -47,6 +47,23 @@ export function handleGetCourseData(request: any, sendResponse: (response?: any)
         });
 
     return true;
+}
+
+function extractLabsFromCourse(course: Course): Lab[] {
+    const labs: Lab[] = [];
+
+    for (const section of course.sections) {
+        const pageResources = section.getResourcesByType('page');
+        for (const resource of pageResources) {
+            labs.push({
+                id: resource.id,
+                name: resource.name,
+                sectionId: section.id
+            });
+        }
+    }
+
+    return labs;
 }
 
 export function getCachedCourse(): Course {
@@ -208,27 +225,6 @@ export function handleGetLabData(request: any, sendResponse: (response?: any) =>
     return true;
 }
 
-export function handleGetProgressConfig(request: any, sendResponse: (response?: any) => void): boolean {
-    const { courseId } = request || {};
-    (async () => {
-        try {
-            const storedConfig = await ProgressConfigStorageManager.getConfig(courseId);
-            if (storedConfig) {
-                const { timestamp, ...config } = storedConfig;
-                sendResponse({ success: true, config, timestamp });
-            } else {
-                const defaultConfig = ProgressConfigStorageManager.getDefaultConfig();
-                sendResponse({ success: true, config: defaultConfig, isDefault: true });
-            }
-        } catch (error: any) {
-            console.error("Error al obtener configuración de progreso:", error);
-            sendResponse({ success: false, error: error.message });
-        }
-    })();
-
-    return true;
-}
-
 export function handleGetExercisesWithEvaluations(request: any, sendResponse: (response?: any) => void): boolean {
     const { pageId } = request;
 
@@ -272,34 +268,39 @@ export function handleGetEvaluations(request: any, sendResponse: (response?: any
     return true;
 }
 
-async function initializeLabDataIfNeeded(course: Course): Promise<void> {
-    const hasLabData = await LabStorageManager.hasLabData(course.id);
+async function initializeLabDataIfNeeded(course: Course, href: string): Promise<void> {
+    const currentLabs = extractLabsFromCourse(course);
 
-    if (hasLabData) {
+    if (currentLabs.length === 0) {
+        console.log('[background] No se encontraron laboratorios (recursos tipo "page")');
+        return;
+    }
+
+    const savedData = await LabStorageManager.getLabData(course.id);
+
+    if (!savedData) {
+        await LabStorageManager.saveLabData(course.id, currentLabs);
+        console.log(`[background] ${currentLabs.length} laboratorios guardados:`, currentLabs);
+        return;
+    }
+
+    const isCourseViewPage = href.includes('egela.ehu.eus/course/view.php?id=');
+    if (!isCourseViewPage) {
         console.log('[background] Ya existen datos de laboratorios para este curso');
         return;
     }
 
-    console.log('[background] Extrayendo laboratorios del curso...');
+    const existingLabIds = new Set(savedData.labs.map(lab => lab.id));
+    const newLabs = currentLabs.filter(lab => !existingLabIds.has(lab.id));
 
-    const labs: Lab[] = [];
-    for (const section of course.sections) {
-        const pageResources = section.getResourcesByType('page');
-        for (const resource of pageResources) {
-            labs.push({
-                id: resource.id,
-                name: resource.name,
-                required: false
-            });
-        }
+    if (newLabs.length === 0) {
+        console.log('[background] No hay laboratorios nuevos para añadir');
+        return;
     }
 
-    if (labs.length > 0) {
-        await LabStorageManager.saveLabData(course.id, labs);
-        console.log(`[background] ${labs.length} laboratorios guardados:`, labs);
-    } else {
-        console.log('[background] No se encontraron laboratorios (recursos tipo "page")');
-    }
+    const mergedLabs = [...savedData.labs, ...newLabs];
+    await LabStorageManager.saveLabData(course.id, mergedLabs);
+    console.log(`[background] ${newLabs.length} laboratorios nuevos añadidos:`, newLabs);
 }
 
 /**

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import LabContextModal from "../LabContextModal";
 import { createHandlers } from "./handlers";
@@ -8,7 +8,7 @@ import { ReasoningSelector, VerbositySelector } from "./selectors";
 import { LabConfigTabProps } from "./types";
 import { handleSaveChanges } from "./utils";
 
-const LabConfigTab: React.FC<LabConfigTabProps> = ({ courseId, onConfigUpdate, isActive }) => {
+const LabConfigTab: React.FC<LabConfigTabProps> = ({ courseId, sectionLabIds, onConfigUpdate, isActive }) => {
     const { t } = useTranslation();
 
     // Función auxiliar para renderizar HTML seguro
@@ -48,12 +48,21 @@ const LabConfigTab: React.FC<LabConfigTabProps> = ({ courseId, onConfigUpdate, i
         setContextModalLabId,
     } = useLabConfigState(courseId, isActive);
 
+    // Filtrar labs por los IDs de la sección actual
+    const filteredLabs = useMemo(() => {
+        // Si no hay filtro de sección (undefined), mostrar todos los labs
+        if (sectionLabIds === undefined) return labs;
+        // Si hay filtro de sección (incluso si está vacío), filtrar por esos IDs
+        const labIdSet = new Set(sectionLabIds);
+        return labs.filter(lab => labIdSet.has(lab.id));
+    }, [labs, sectionLabIds]);
+
     const {
         handleToggleGenerateContext,
-        handleToggleRequired,
         handleVerbosityChange,
         handleReasoningChange,
         toggleExpand,
+        handleRegenerateContext,
     } = createHandlers(
         labConfig,
         setLabConfig,
@@ -67,6 +76,8 @@ const LabConfigTab: React.FC<LabConfigTabProps> = ({ courseId, onConfigUpdate, i
         contentRef,
         courseId,
         onConfigUpdate,
+        contextGenerationStatus,
+        setContextGenerationStatus,
     );
 
     const isAnyGenerating = Array.from(contextGenerationStatus.values()).some(s => s === "generating");
@@ -116,11 +127,16 @@ const LabConfigTab: React.FC<LabConfigTabProps> = ({ courseId, onConfigUpdate, i
         );
     }
 
-    if (labs.length === 0) {
+    if (filteredLabs.length === 0) {
+        const inSection = sectionLabIds !== undefined;
         return (
             <div className="alert alert-info" role="alert">
-                <strong>{t("options.labConfig.noLabsTitle")}</strong>
-                <p className="mb-0 mt-2 small">{t("options.labConfig.noLabsDesc")}</p>
+                <strong>
+                    {t(inSection ? "options.labConfig.noLabsInSectionTitle" : "options.labConfig.noLabsTitle")}
+                </strong>
+                <p className="mb-0 mt-2 small">
+                    {t(inSection ? "options.labConfig.noLabsInSectionDesc" : "options.labConfig.noLabsDesc")}
+                </p>
             </div>
         );
     }
@@ -135,7 +151,6 @@ const LabConfigTab: React.FC<LabConfigTabProps> = ({ courseId, onConfigUpdate, i
                 <p className="mb-2">{renderHTML(t("options.labConfig.infoDesc"))}</p>
                 <ul className="mb-2 small">
                     <li>{renderHTML(t("options.labConfig.infoList.include"))}</li>
-                    <li>{renderHTML(t("options.labConfig.infoList.required"))}</li>
                     <li>{renderHTML(t("options.labConfig.infoList.verbosity"))}</li>
                     <li>{renderHTML(t("options.labConfig.infoList.reasoning"))}</li>
                 </ul>
@@ -143,10 +158,9 @@ const LabConfigTab: React.FC<LabConfigTabProps> = ({ courseId, onConfigUpdate, i
             </div>
 
             <div className="accordion" id="labAccordion">
-                {labs.map((lab, index) => {
+                {filteredLabs.map((lab, index) => {
                     const config = labConfig.get(lab.id);
                     const contextState = labContextState.get(lab.id);
-                    const isRequired = config?.required ?? false;
                     const verbosity = config?.verbosity ?? "medium";
                     const reasoningEffort = config?.reasoningEffort ?? "medium";
                     const isExpanded = expandedLab === lab.id;
@@ -168,15 +182,14 @@ const LabConfigTab: React.FC<LabConfigTabProps> = ({ courseId, onConfigUpdate, i
                                 onClick={() => canExpand && toggleExpand(lab.id)}
                                 style={{ minHeight: "48px" }}
                             >
-                                {/* Lab number */}
-                                <span className="badge bg-secondary lab-number-badge">#{index + 1}</span>
-
                                 {/* Lab name */}
                                 <span className={`lab-name ${!hasContext ? "inactive" : ""}`}>{lab.name}</span>
 
                                 {/* Switch container */}
-
-                                <div className="lab-switch-row" onClick={e => e.stopPropagation()}>
+                                <div
+                                    className={`lab-switch-row ${isGenerating ? "is-generating" : ""}`}
+                                    onClick={e => e.stopPropagation()}
+                                >
                                     {isGenerating ? (
                                         <span className="spinner-border spinner-border-sm text-primary" role="status">
                                             <span className="visually-hidden">{t("options.labConfig.generating")}</span>
@@ -228,6 +241,40 @@ const LabConfigTab: React.FC<LabConfigTabProps> = ({ courseId, onConfigUpdate, i
                                                     />
                                                 </svg>
                                             </span>
+                                            {/* Botón de regenerar contexto */}
+                                            {hasContext && !isGenerating && (
+                                                <button
+                                                    onClick={e => {
+                                                        e.stopPropagation();
+                                                        handleRegenerateContext(lab.id);
+                                                    }}
+                                                    title={t("options.labConfig.regenerateContext")}
+                                                    disabled={isDisabled}
+                                                    style={{
+                                                        background: "transparent",
+                                                        border: "none",
+                                                        padding: "8px",
+                                                        cursor: isDisabled ? "not-allowed" : "pointer",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent: "center",
+                                                        opacity: isDisabled ? 0.5 : 1,
+                                                    }}
+                                                >
+                                                    <svg
+                                                        width="20"
+                                                        height="20"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        stroke="#6c757d"
+                                                        strokeWidth="2"
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                    >
+                                                        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+                                                    </svg>
+                                                </button>
+                                            )}
                                             {/* Icono de error si falla */}
                                             {isError && (
                                                 <span
@@ -254,63 +301,44 @@ const LabConfigTab: React.FC<LabConfigTabProps> = ({ courseId, onConfigUpdate, i
                                     )}
                                 </div>
 
-                                {/* Expand icon */}
-                                <div className="lab-expand-icon ms-2" style={{ display: "flex", alignItems: "center" }}>
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        width="16"
-                                        height="16"
-                                        fill="currentColor"
-                                        className={`bi bi-chevron-${
-                                            canExpand ? (isExpanded ? "up" : "down") : "right"
-                                        }`}
-                                        viewBox="0 0 16 16"
+                                {/* Expand icon - solo visible si está incluido con éxito */}
+                                {canExpand && (
+                                    <div
+                                        className="lab-expand-icon"
                                         style={{
-                                            color: "#495057", // Default color for visibility
+                                            display: "flex",
+                                            alignItems: "center",
+                                            marginLeft: "4px",
                                         }}
                                     >
-                                        {isExpanded ? (
-                                            <path
-                                                fillRule="evenodd"
-                                                d="M1.646 10.854a.5.5 0 0 0 .708 0l6-6a.5.5 0 0 0-.708-.708l-6 6a.5.5 0 0 0 0 .708zm12.708 0a.5.5 0 0 0 0-.708l-6-6a.5.5 0 1 0-.708.708l6 6a.5.5 0 0 0 .708 0z"
-                                            />
-                                        ) : (
-                                            <path
-                                                fillRule="evenodd"
-                                                d="M1.646 5.146a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708zm12.708 0a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708l6-6a.5.5 0 0 1 .708 0z"
-                                            />
-                                        )}
-                                    </svg>
-                                </div>
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="16"
+                                            height="16"
+                                            fill="currentColor"
+                                            className={`bi bi-chevron-${isExpanded ? "up" : "down"}`}
+                                            viewBox="0 0 16 16"
+                                            style={{
+                                                color: "#495057",
+                                            }}
+                                        >
+                                            {isExpanded ? (
+                                                <path
+                                                    fillRule="evenodd"
+                                                    d="M1.646 10.854a.5.5 0 0 0 .708 0l6-6a.5.5 0 0 0-.708-.708l-6 6a.5.5 0 0 0 0 .708zm12.708 0a.5.5 0 0 0 0-.708l-6-6a.5.5 0 1 0-.708.708l6 6a.5.5 0 0 0 .708 0z"
+                                                />
+                                            ) : (
+                                                <path
+                                                    fillRule="evenodd"
+                                                    d="M1.646 5.146a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708zm12.708 0a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708l6-6a.5.5 0 0 1 .708 0z"
+                                                />
+                                            )}
+                                        </svg>
+                                    </div>
+                                )}
                             </div>
                             {isExpanded && (
                                 <div className="lab-config-body" id={`lab-${lab.id}`}>
-                                    {/* Toggle Requerido */}
-                                    <div className="mb-3 d-flex align-items-center justify-content-between">
-                                        <label
-                                            className={`form-label small mb-0 ${
-                                                hasContext ? "text-muted" : "text-muted opacity-50"
-                                            }`}
-                                            htmlFor={`switch-lab-${lab.id}`}
-                                        >
-                                            {t("options.labConfig.requiredLabel")}
-                                        </label>
-                                        <div className="form-check form-switch">
-                                            <input
-                                                className="form-check-input"
-                                                type="checkbox"
-                                                role="switch"
-                                                id={`switch-lab-${lab.id}`}
-                                                checked={isRequired}
-                                                onChange={() => handleToggleRequired(lab.id)}
-                                                disabled={isDisabled || !hasContext}
-                                                style={{ cursor: hasContext ? "pointer" : "not-allowed" }}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <hr className="my-2" />
-
                                     <p className={`small mb-2 ${hasContext ? "text-muted" : "text-muted opacity-50"}`}>
                                         <strong>{t("options.labConfig.explanationConfig")}</strong>
                                     </p>
@@ -338,7 +366,7 @@ const LabConfigTab: React.FC<LabConfigTabProps> = ({ courseId, onConfigUpdate, i
                                     {/* Edit Context Button */}
                                     <div className="mb-2">
                                         <button
-                                            className="btn btn-outline-secondary btn-sm w-100"
+                                            className="btn btn-outline-primary btn-sm"
                                             onClick={e => {
                                                 e.stopPropagation();
                                                 setContextModalLabId(lab.id);

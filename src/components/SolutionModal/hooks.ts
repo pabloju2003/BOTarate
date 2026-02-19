@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
-import { Evaluation } from "./types";
 
 export const useSolutionModal = (
     isOpen: boolean,
     exerciseName: string,
+    onClose: () => void,
     onEvaluationGenerated?: () => void
 ) => {
     const [solution, setSolution] = useState<string>("");
-    const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
     const [isEvaluating, setIsEvaluating] = useState<boolean>(false);
     const [evaluationError, setEvaluationError] = useState<string | null>(null);
 
@@ -15,7 +14,6 @@ export const useSolutionModal = (
     useEffect(() => {
         if (isOpen) {
             setSolution("");
-            setEvaluation(null);
             setEvaluationError(null);
         }
     }, [isOpen, exerciseName]);
@@ -35,7 +33,6 @@ export const useSolutionModal = (
 
         setIsEvaluating(true);
         setEvaluationError(null);
-        setEvaluation(null);
 
         try {
             const response = await chrome.runtime.sendMessage({
@@ -50,9 +47,10 @@ export const useSolutionModal = (
             });
 
             if (response.success) {
-                setEvaluation(response.evaluation);
                 console.log("Solution evaluated successfully");
-                // Notificar que se generó una nueva evaluación
+                // Cerrar el modal
+                onClose();
+                // Notificar que se generó una nueva evaluación para abrir el modal de lista
                 if (onEvaluationGenerated) {
                     onEvaluationGenerated();
                 }
@@ -76,7 +74,6 @@ export const useSolutionModal = (
     return {
         solution,
         setSolution,
-        evaluation,
         isEvaluating,
         evaluationError,
         handleSubmit,

@@ -5,12 +5,12 @@ export type ContextGenerationStatus = "idle" | "generating" | "completed" | "err
 
 export interface LabConfigTabProps {
     courseId: string;
+    sectionLabIds?: string[];
     onConfigUpdate?: () => void;
     isActive: boolean;
 }
 
 export interface PendingChanges {
-    required?: boolean;
     verbosity?: VerbosityLevel;
     reasoningEffort?: ReasoningEffort;
 }
@@ -22,7 +22,6 @@ export interface LabContextState {
 }
 
 export interface LabConfig {
-    required: boolean;
     verbosity: VerbosityLevel;
     reasoningEffort: ReasoningEffort;
 }

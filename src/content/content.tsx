@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import ChatSidebar from "../components/ChatSidebar";
@@ -8,6 +8,7 @@ import SolutionModal from "../components/SolutionModal";
 import i18n, { i18nInitialized } from "../i18n";
 import { ConfigManager } from "../util/config/ConfigManager";
 import { Course } from "../util/egela/Course";
+import { detectCurrentCourseSectionNumber } from "../util/egela/SectionDetection";
 import { extractPdfTextFromBase64 } from "../util/pdf/PdfExtractor";
 // @ts-ignore: allow importing CSS as a side-effect in this content script
 import "./bootstrap.css";
@@ -94,6 +95,67 @@ const ExtensionContent: React.FC = () => {
     const [pendingModalOpen, setPendingModalOpen] = useState<{ index: number; fromCache: boolean } | null>(null);
     const [pendingSolutionModalOpen, setPendingSolutionModalOpen] = useState<number | null>(null);
     const identifyingExercisesRef = React.useRef<boolean>(false);
+
+    // Derivar pageName y sectionId del curso y la página actual
+    const { pageName, currentSectionId } = useMemo(() => {
+        if (!course) {
+            return { pageName: undefined, currentSectionId: undefined };
+        }
+
+        // Si estamos en un lab (page), buscar por pageId
+        if (currentPageId) {
+            for (const section of course.sections) {
+                const resource = section.resources.find(r => r.id === currentPageId);
+                if (resource) {
+                    return { pageName: resource.name, currentSectionId: section.id };
+                }
+            }
+            return { pageName: undefined, currentSectionId: undefined };
+        }
+
+        // Si estamos en la vista de sección del curso (/course/view.php?id=X&section=N)
+        const pathname = globalThis.location.pathname;
+        if (pathname.includes("/course/view.php")) {
+            const sectionNumber = detectCurrentCourseSectionNumber(globalThis.location.href, document);
+            if (sectionNumber !== undefined) {
+                const section = course.sections.find(s => s.section === sectionNumber);
+                if (section) {
+                    return { pageName: section.title, currentSectionId: section.id };
+                }
+            }
+
+            return { pageName: undefined, currentSectionId: undefined };
+        }
+
+        // Si estamos en un recurso tipo /mod/ (no page), buscar por id del módulo
+        if (pathname.includes("/mod/")) {
+            const urlParams = new URLSearchParams(globalThis.location.search);
+            const modId = urlParams.get("id");
+            if (modId) {
+                for (const section of course.sections) {
+                    const resource = section.resources.find(r => r.id === modId);
+                    if (resource) {
+                        return { pageName: resource.name, currentSectionId: section.id };
+                    }
+                }
+            }
+        }
+
+        return { pageName: undefined, currentSectionId: undefined };
+    }, [course, currentPageId]);
+
+    // IDs de los labs que pertenecen a la sección actual
+    const sectionLabIds = useMemo(() => {
+        if (!course || !currentSectionId) return undefined;
+        const section = course.sections?.find(s => s.id === currentSectionId);
+        if (!section) return [];
+        return section.resources?.filter(r => r.module === "page").map(r => r.id) || [];
+    }, [course, currentSectionId]);
+
+    // Nombre a mostrar debajo del título
+    const displayName = useMemo(() => {
+        return pageName ?? undefined;
+    }, [pageName]);
 
     const openExerciseModalForIndex = useCallback(
         (exerciseIndex: number, fromCache: boolean): boolean => {
@@ -534,6 +596,12 @@ const ExtensionContent: React.FC = () => {
     const handleEvaluationGenerated = () => {
         // Incrementar el trigger para forzar recarga en ChatSidebar
         setReloadEvaluationsKey(prev => prev + 1);
+
+        // Abrir el modal de lista de evaluaciones para el ejercicio actual
+        if (exercises.length > 0 && exercises[selectedExerciseIndex]) {
+            setSelectedEvaluationExerciseName(exercises[selectedExerciseIndex].name);
+            setIsEvaluationListModalOpen(true);
+        }
     };
 
     const handleIdentifyExercises = async () => {
@@ -565,6 +633,8 @@ const ExtensionContent: React.FC = () => {
                     onClose={handleCloseExtension}
                     isLoadingExercises={isLoadingExercises}
                     pageId={currentPageId || undefined}
+                    pageName={displayName}
+                    sectionLabIds={sectionLabIds}
                     onOpenExplanation={handleOpenExplanationFromCache}
                     onExplanationGenerated={handleExplanationGenerated}
                     onOpenEvaluation={handleOpenEvaluationList}

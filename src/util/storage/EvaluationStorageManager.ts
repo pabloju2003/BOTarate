@@ -13,6 +13,7 @@ export interface Evaluation {
  */
 export interface SavedEvaluation extends Evaluation {
     exerciseName: string;
+    statement: string; // The exercise statement
     solution: string; // The solution submitted by the student
     timestamp: number; // Time when the evaluation was performed
 }
@@ -37,12 +38,14 @@ export class EvaluationStorageManager extends BaseStorageManager {
      * Saves a new evaluation for a specific exercise
      * @param pageId Page ID
      * @param exerciseName Exercise name
+     * @param statement Exercise statement
      * @param solution Solution submitted by the student
      * @param evaluation Generated evaluation
      */
     static async saveEvaluation(
         pageId: string,
         exerciseName: string,
+        statement: string,
         solution: string,
         evaluation: Evaluation
     ): Promise<void> {
@@ -51,6 +54,7 @@ export class EvaluationStorageManager extends BaseStorageManager {
 
         const savedEvaluation: SavedEvaluation = {
             exerciseName,
+            statement,
             solution,
             score: evaluation.score,
             feedback: evaluation.feedback,

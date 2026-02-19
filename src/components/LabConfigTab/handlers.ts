@@ -1,5 +1,5 @@
 import { LabConfigTabStateStorageManager } from "../../util/storage/LabConfigTabStateStorageManager";
-import { LabConfig, LabContextState, PendingChanges, ReasoningEffort, VerbosityLevel } from "./types";
+import { ContextGenerationStatus, LabConfig, LabContextState, PendingChanges, ReasoningEffort, VerbosityLevel } from "./types";
 
 export const createHandlers = (
     labConfig: Map<string, LabConfig>,
@@ -13,7 +13,9 @@ export const createHandlers = (
     setExpandedLab: React.Dispatch<React.SetStateAction<string | null>>,
     contentRef: React.RefObject<HTMLDivElement | null>,
     courseId: string,
-    onConfigUpdate?: () => void
+    onConfigUpdate?: () => void,
+    contextGenerationStatus?: Map<string, ContextGenerationStatus>,
+    setContextGenerationStatus?: React.Dispatch<React.SetStateAction<Map<string, ContextGenerationStatus>>>
 ) => {
     const handleToggleGenerateContext = (labId: string) => {
         setLabContextState(prev => {
@@ -27,29 +29,6 @@ export const createHandlers = (
             }
             return newState;
         });
-        setHasUnsavedChanges(true);
-    };
-
-    const handleToggleRequired = (labId: string) => {
-        const currentConfig = labConfig.get(labId);
-        const newValue = !(currentConfig?.required ?? false);
-
-        setLabConfig(prev => {
-            const newConfig = new Map(prev);
-            const current = newConfig.get(labId);
-            if (current) {
-                newConfig.set(labId, { ...current, required: newValue });
-            }
-            return newConfig;
-        });
-
-        setPendingChanges(prev => {
-            const newChanges = new Map(prev);
-            const current = newChanges.get(labId) || {};
-            newChanges.set(labId, { ...current, required: newValue });
-            return newChanges;
-        });
-
         setHasUnsavedChanges(true);
     };
 
@@ -112,11 +91,78 @@ export const createHandlers = (
         });
     };
 
+    const handleRegenerateContext = async (labId: string) => {
+        if (!setContextGenerationStatus) return;
+
+        // Set generating status
+        setContextGenerationStatus(prev => {
+            const newStatus = new Map(prev);
+            newStatus.set(labId, "generating");
+            return newStatus;
+        });
+
+        try {
+            const response = await chrome.runtime.sendMessage({
+                action: "generateLabContext",
+                pageId: labId,
+                courseId: courseId,
+            });
+
+            if (response.success) {
+                setContextGenerationStatus(prev => {
+                    const newStatus = new Map(prev);
+                    newStatus.set(labId, "completed");
+                    return newStatus;
+                });
+                setLabContextState(prev => {
+                    const newState = new Map(prev);
+                    const current = newState.get(labId);
+                    if (current) {
+                        newState.set(labId, {
+                            ...current,
+                            hasContext: true,
+                            originalGenerateContext: true,
+                        });
+                    }
+                    return newState;
+                });
+                // Notify parent if needed
+                if (onConfigUpdate) {
+                    onConfigUpdate();
+                }
+            } else {
+                setContextGenerationStatus(prev => {
+                    const newStatus = new Map(prev);
+                    newStatus.set(labId, "error");
+                    return newStatus;
+                });
+            }
+        } catch {
+            setContextGenerationStatus(prev => {
+                const newStatus = new Map(prev);
+                newStatus.set(labId, "error");
+                return newStatus;
+            });
+        }
+
+        // Reset status after a delay
+        setTimeout(() => {
+            setContextGenerationStatus(prev => {
+                const newStatus = new Map(prev);
+                const currentStatus = newStatus.get(labId);
+                if (currentStatus === "completed" || currentStatus === "error") {
+                    newStatus.set(labId, "idle");
+                }
+                return newStatus;
+            });
+        }, 3000);
+    };
+
     return {
         handleToggleGenerateContext,
-        handleToggleRequired,
         handleVerbosityChange,
         handleReasoningChange,
         toggleExpand,
+        handleRegenerateContext,
     };
 };

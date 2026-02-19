@@ -15,9 +15,7 @@ const ExerciseEditModal: React.FC<ExerciseEditModalProps> = props => {
 
     if (!props.isOpen) return null;
 
-    const title = props.isAddMode
-        ? t("options.exerciseEdit.addTitle")
-        : t("options.exerciseEdit.editTitle", { name: props.exercise?.name ?? "" });
+    const title = t("options.exerciseEdit.editTitle", { name: props.exercise?.name ?? "" });
 
     return (
         <div
@@ -89,18 +87,10 @@ const ExerciseEditModal: React.FC<ExerciseEditModalProps> = props => {
                         )}
                     </div>
                     <div className="modal-footer">
-                        <button
-                            className="btn btn-secondary"
-                            onClick={props.onClose}
-                            disabled={isSaving || !!successMessage}
-                        >
+                        <button className="btn btn-secondary" onClick={props.onClose} disabled={isSaving}>
                             {t("common.cancel")}
                         </button>
-                        <button
-                            className="btn btn-primary"
-                            onClick={handleSave}
-                            disabled={isSaving || !hasChanges || !!successMessage}
-                        >
+                        <button className="btn btn-primary" onClick={handleSave} disabled={isSaving || !hasChanges}>
                             {isSaving ? (
                                 <>
                                     <output className="spinner-border spinner-border-sm me-2">

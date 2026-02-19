@@ -33,9 +33,8 @@
         "placeholder": {
             "disabledModal": "Chat disabled (modal open)...",
             "teacherMode": "Switch to student mode to use the chat...",
-            "labBlocked": "Lab blocked...",
             "loadingExercises": "Loading exercises...",
-            "notConfigured": "Lab not configured by teacher...",
+            "notConfigured": "BOTarate is not available for this page.",
             "default": "Type your question..."
         },
         "welcome": {
@@ -45,24 +44,15 @@
             "genericHelper": "I am here to help you with the subject."
         },
         "status": {
-            "checkingAccess": "Checking lab access...",
-            "labBlockedTitle": "Lab blocked",
-            "labBlockedDesc": "This lab is blocked because it is a required lab and you have not yet completed the previous lab.",
-            "unlockTitle": "To unlock this lab:",
-            "unlockList": {
-                "complete": "Complete the required challenge exercises from the previous lab",
-                "criteria": "Meet the criteria defined by your teacher in the extension options or check the details in \"My progress\"",
-                "checkProgress": "Check your progress in the \"My progress\" tab"
-            },
             "teacherModeTitle": "Teacher mode active",
             "teacherModeDesc": "You are in teacher mode. To use the chat agent, you must switch to student mode.",
             "teacherModeAction": "Go to the <strong>\"Mode\"</strong> switch to change your mode.",
             "loadingExercises": "Loading...",
             "searchingExercises": "Searching for exercises...",
             "analyzingContent": "Analyzing page content to identify available exercises.",
-            "notConfiguredTitle": "Lab not configured",
-            "notConfiguredDesc": "The teacher has not configured this lab yet. The chat is disabled until the configuration is available.",
-            "notConfiguredAction": "Please wait for your teacher to configure this lab or contact them for more information.",
+            "notConfiguredTitle": "BOTarate not available",
+            "notConfiguredDesc": "BOTarate is not available for this page.",
+            "notConfiguredAction": "",
             "generating": "Generating response..."
         },
         "roles": {
@@ -87,8 +77,14 @@
             "withName": "📦 Reading resource \"{{name}}\"...",
             "generic": "📦 Reading resource..."
         },
-        "explainExercise": "💡 Explaining exercise {{index}}...",
-        "solveExercise": "📝 Opening solution form for exercise {{index}}...",
+        "explainExercise": {
+            "withName": "💡 Explaining exercise \"{{name}}\"...",
+            "default": "💡 Explaining exercise {{index}}..."
+        },
+        "solveExercise": {
+            "withName": "📝 Opening solution form for exercise \"{{name}}\"...",
+            "default": "📝 Opening solution form for exercise {{index}}..."
+        },
         "getFilteredFileContent": "🔍 Searching in file...",
         "analyzeImage": {
             "withName": "🖼️ Analyzing image \"{{name}}\"...",
@@ -111,11 +107,8 @@
             "chat": "Chat",
             "exercises": "Exercises",
             "progress": "My progress",
-            "configureCourse": "Configure subject",
+            "configureCourse": "Configure section",
             "configureLab": "Configure lab"
-        },
-        "tooltips": {
-            "labBlocked": "Not available while lab is blocked"
         },
         "checkingConfig": "Checking configuration...",
         "courseLoadError": "Error loading course",
@@ -163,7 +156,6 @@
         "tabs": {
             "llm": "LLM Configuration",
             "agents": "Prompts",
-            "progress": "Progress",
             "importExport": "Import/Export"
         },
         "llm": {
@@ -204,6 +196,10 @@
                 "exerciseCriteria": {
                     "label": "Exercise identification",
                     "desc": "Criteria for identifying what constitutes an exercise and how it should be extracted"
+                },
+                "excludedExercises": {
+                    "label": "Exercises to exclude",
+                    "desc": "Describe the types or patterns of exercises that should NOT be included (e.g., 'lab preparation' or 'exercise solutions')."
                 },
                 "role": {
                     "label": "Role",
@@ -258,14 +254,14 @@
             "noLabOpenDesc": "You must open a lab first to be able to add or configure exercises.",
             "table": {
                 "headerName": "Exercise name",
-                "headerChallenge": "Is student only",
-                "headerPicky": "Is false friend",
+                "headerChallenge": "Student only",
+                "headerPicky": "False friend",
                 "headerActions": "Actions",
                 "badgeChallenge": "Student only",
                 "badgePicky": "False friend",
-                "switchChallengeOn": "Is student only",
+                "switchChallengeOn": "Student only",
                 "switchChallengeOff": "Not student only",
-                "switchPickyOn": "Is false friend",
+                "switchPickyOn": "False friend",
                 "switchPickyOff": "Not false friend"
             },
             "unsavedTitle": "⚠️ You have unsaved changes",
@@ -280,17 +276,17 @@
             "loading": "Loading labs...",
             "noLabsTitle": "No labs available",
             "noLabsDesc": "No 'page' type resources found in the subject that can be configured as labs.",
+            "noLabsInSectionTitle": "No labs in this section",
+            "noLabsInSectionDesc": "This section does not contain any 'page' type resources that can be configured as labs.",
             "infoTitle": "Subject configuration",
-            "infoDesc": "Configure which labs to include and their <strong>required level</strong>, <strong>verbosity</strong> and <strong>reasoning</strong> options.",
+            "infoDesc": "Configure which labs to include and their <strong>verbosity</strong> and <strong>reasoning</strong> options.",
             "infoList": {
                 "include": "<strong>Include lab:</strong> Enable this to analyze the lab and extract exercises. This is required before other configuration options can be used.",
-                "required": "<strong>Required lab:</strong> Labs marked as required will unlock sequentially when the student completes the challenges of the previous lab.",
                 "verbosity": "<strong>Verbosity level:</strong> Controls the level of detail in the agent's explanations (low, medium, or high).",
                 "reasoning": "<strong>Reasoning effort:</strong> Configures how much detail the agent should put into explaining its reasoning (minimal, low, medium, or high)."
             },
             "infoFooter": "Click on an included lab to expand its configuration options.",
             "includeLabel": "Include",
-            "requiredLabel": "Required lab",
             "explanationConfig": "Explanation agent configuration:",
             "goToLab": "Go to lab",
             "unsavedTitle": "⚠️ You have unsaved changes",
@@ -317,7 +313,9 @@
                 "reasoningMedium": "Moderate reasoning",
                 "reasoningHigh": "Detailed step-by-step reasoning"
             },
-            "editContext": "View / Edit context",
+            "editContext": "Context",
+            "regenerateContext": "Regenerate context",
+            "regenerating": "Regenerating...",
             "exercisesTitle": "Exercises:",
             "noExercises": "No exercises in this lab.",
             "addExercise": "Add exercise",
@@ -360,29 +358,15 @@
             "name": "Exercise name",
             "namePlaceholder": "Enter exercise name...",
             "statement": "Statement",
-            "statementPlaceholder": "Enter exercise statement..."
-        },
-        "progress": {
-            "loading": "Loading progress configuration...",
-            "globalTitle": "Global progress criteria",
-            "info": {
-                "title": "Configure criteria to unlock labs",
-                "desc": "Adjust the minimum score and percentage of passed challenges needed to progress."
+            "statementPlaceholder": "Enter exercise statement...",
+            "success": {
+                "added": "Exercise added successfully.",
+                "updated": "Exercise updated successfully."
             },
-            "minScore": {
-                "label": "Minimum score to pass a challenge exercise",
-                "help": "Challenges with a score equal to or higher than this value will be considered passed."
-            },
-            "minPercentage": {
-                "label": "Minimum percentage of passed challenges to progress",
-                "help": "Example: with 75%, if a lab has 4 challenges, at least 3 must be passed to unlock the next one."
-            },
-            "save": "Save criteria",
-            "saving": "Saving...",
-            "restore": "Restore default values",
-            "errorLoad": "Could not load configuration. Please try again.",
-            "successSave": "Progress criteria saved successfully.",
-            "errorSave": "Could not save. Check values and try again."
+            "errors": {
+                "nameRequired": "Name is required.",
+                "saveError": "Error saving exercise."
+            }
         },
         "importExport": {
             "export": {
@@ -401,7 +385,11 @@
                 "title": "Danger zone",
                 "description": "Permanently delete all data stored by the extension. This action cannot be undone.",
                 "button": "Delete all data",
-                "processing": " Deleting..."
+                "processing": " Deleting...",
+                "clearContextTitle": "Clear lab context",
+                "clearContextDescription": "Delete only the generated context of labs (exercises and identified data). Agent prompts and other configurations will be preserved.",
+                "clearContextButton": "Clear lab context",
+                "clearContextProcessing": " Clearing..."
             },
             "messages": {
                 "exportSuccess": "Configuration exported successfully",
@@ -411,11 +399,14 @@
                 "importJsonError": "The file does not contain valid JSON.",
                 "invalidFile": "Please select a valid JSON file.",
                 "clearSuccess": "All data has been deleted successfully",
+                "clearContextSuccess": "Lab context has been deleted successfully",
                 "exportError": "Unexpected error exporting: {{error}}",
                 "importError": "Unexpected error importing: {{error}}",
-                "clearError": "Unexpected error clearing: {{error}}"
+                "clearError": "Unexpected error clearing: {{error}}",
+                "clearContextError": "Unexpected error clearing context: {{error}}"
             },
-            "confirmClear": "⚠️ WARNING: This action will delete ALL saved configuration, including:\n\n- Agent configuration\n- Identified exercise data\n- Configured lab data\n\nThis action CANNOT be undone. Are you sure you want to continue?"
+            "confirmClear": "⚠️ WARNING: This action will delete ALL saved configuration, including:\n\n- Agent configuration\n- Identified exercise data\n- Configured lab data\n\nThis action CANNOT be undone. Are you sure you want to continue?",
+            "confirmClearContext": "⚠️ WARNING: This action will delete ONLY the lab context (exercises and identified information):\n\n- Identified exercise data\n- Configured lab data\n\nAgent prompts and other settings will be preserved.\n\nThis action CANNOT be undone. Are you sure you want to continue?"
         },
         "devMode": {
             "title": "Developer options",
@@ -516,32 +507,18 @@
     },
     "progress": {
         "title": "Progress",
-        "completed": "Completed",
-        "pending": "Pending",
         "labs": "Labs",
         "exercises": "Exercises",
         "score": "Score",
         "loading": "Loading progress...",
         "noLabsTitle": "No labs configured",
-        "noLabsDesc": "The teacher has not yet configured the lab and progression system for this subject.",
-        "infoTitle": "Progression system",
-        "infoDesc": "Labs unlock sequentially. To access a lab, you must complete the <strong>challenge exercises</strong> of the previous lab following the criteria defined by your teacher.",
-        "infoList": {
-            "challenge": "<strong>Challenge exercises:</strong> Cannot be explained by AI, but can be evaluated when you submit your solution.",
-            "score": "<strong>Recorded score:</strong> Your best score for each exercise is saved.",
-            "required": "<strong>Required labs only:</strong> This view shows only the labs marked as required by the teacher, which must be completed in order to advance."
-        },
-        "criteriaTitle": "Current criteria:",
-        "minScore": "Minimum score per challenge: {{score}} / 10",
-        "minPercentage": "Minimum percentage of passed challenges: {{percentage}}% of the total challenges in the lab",
+        "noLabsDesc": "The teacher has not yet configured the labs for this subject.",
         "labCard": {
-            "title": "Lab {{index}}: {{name}}",
+            "title": "{{name}}",
+            "exercisesTitle": "Exercises:",
             "exercises": "Exercises: {{completed}} / {{total}}",
             "average": "Average score: {{score}}",
-            "challengesTitle": "Challenge exercises:",
-            "notAttempted": "Not attempted",
-            "noChallenges": "There are no challenge exercises in this lab.",
-            "locked": "Lab locked. Complete the previous lab following the configured criteria."
+            "notAttempted": "Not attempted"
         }
     },
     "errors": {
@@ -560,7 +537,6 @@
         "languageInstruction": "Always respond in English.",
         "progressSummary": {
             "noProgress": "The student has not completed any labs or exercises yet.",
-            "completedLabs": "Completed labs",
             "completedExercises": "Completed exercises by lab"
         }
     }

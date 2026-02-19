@@ -389,6 +389,60 @@ export class ImportExportManager {
     }
 
     /**
+     * Limpia solo el contexto de laboratorios (ejercicios y datos identificados)
+     * Mantiene la configuración de agentes y otra información
+     * @param courseId Optional course ID to clear only that course's lab context
+     * @returns Resultado de la operación
+     */
+    static async clearLabContextOnly(courseId?: string): Promise<ImportExportResult> {
+        try {
+            if (courseId) {
+                // Course-specific clear
+                const allData = await chrome.storage.local.get(null);
+                const courseLabData = allData[`lab_data_${courseId}`];
+                const labIds: string[] = courseLabData?.labs?.map((lab: any) => lab.id) || [];
+
+                // Remove exercise data for this course's labs
+                const exerciseKeysToRemove = Object.keys(allData).filter(key => {
+                    if (!key.startsWith('exercise_data_')) return false;
+                    const pageId = key.replace('exercise_data_', '');
+                    return labIds.includes(pageId);
+                });
+                if (exerciseKeysToRemove.length > 0) {
+                    await chrome.storage.local.remove(exerciseKeysToRemove);
+                }
+
+                // Remove lab data for this course
+                await chrome.storage.local.remove([`lab_data_${courseId}`]);
+
+                console.log(`[ImportExportManager] Lab context cleared for course ${courseId}`);
+            } else {
+                // Global clear - remove all exercise and lab data
+                const allData = await chrome.storage.local.get(null);
+                const keysToRemove = Object.keys(allData).filter(key =>
+                    key.startsWith('exercise_data_') || key.startsWith('lab_data_')
+                );
+                if (keysToRemove.length > 0) {
+                    await chrome.storage.local.remove(keysToRemove);
+                }
+
+                console.log("[ImportExportManager] All lab context has been cleared");
+            }
+
+            return {
+                success: true,
+                message: "success",
+            };
+        } catch (error) {
+            console.error("[ImportExportManager] Error al limpiar contexto de laboratorios:", error);
+            return {
+                success: false,
+                message: "clear_error",
+            };
+        }
+    }
+
+    /**
      * Obtiene estadísticas sobre los datos almacenados
      * @returns Objeto con las estadísticas
      */

@@ -56,17 +56,9 @@ export class ModeStorageManager extends BaseStorageManager {
     }
 
     /**
-     * Saves user role with timestamp
-     * @param isTeacher true if user is teacher
-     */
-    static async saveUserRole(isTeacher: boolean): Promise<void> {
-        const data: UserRoleData = { isTeacher };
-        await this.saveData("", this.USER_ROLE_STORAGE_KEY, data);
-    }
-
-    /**
      * Gets user role if cached and valid
      * @returns Object with isTeacher and isValid, or null if no valid cache
+     * @private Internal use only - used by getMode() for default mode detection
      */
     static async getUserRole(): Promise<{ isTeacher: boolean; isValid: boolean } | null> {
         const data = await this.getData<UserRoleData>("", this.USER_ROLE_STORAGE_KEY);
@@ -82,13 +74,6 @@ export class ModeStorageManager extends BaseStorageManager {
             isTeacher: data.isTeacher,
             isValid
         };
-    }
-
-    /**
-     * Clears user role cache
-     */
-    static async clearUserRoleCache(): Promise<void> {
-        await this.removeData("", this.USER_ROLE_STORAGE_KEY);
     }
 
     /**

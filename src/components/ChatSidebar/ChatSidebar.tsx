@@ -26,8 +26,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = props => {
         isLoadingExplanations,
         isLoadingEvaluations,
         exercises,
-        isLabBlocked,
-        isCheckingBlocked,
         isTeacherMode,
         isUserTeacher,
         needsConfiguration,
@@ -38,6 +36,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = props => {
         isChatDisabled,
         inputRef,
         courseLoadError,
+        isInLab,
+        pageName,
+        sectionLabIds,
         handleConfigLoaded,
         handleModeToggle,
         handleExplanationClick,
@@ -97,96 +98,103 @@ const ChatSidebar: React.FC<ChatSidebarProps> = props => {
                         </div>
                     )}
                 </div>
+                {pageName && (
+                    <div className="fw-bold mb-3 mt-3" style={{ paddingLeft: "2px", fontSize: "0.95rem" }}>
+                        {pageName}
+                    </div>
+                )}
 
-                {/* Pestañas */}
-                <ul className="nav nav-tabs mt-3 mb-0" role="tablist" key={`tabs-${isTeacherMode}-${reloadKey}`}>
-                    {!needsConfiguration && (
-                        <>
-                            {/* Chat - siempre primero */}
-                            <li className="nav-item" role="presentation">
-                                <button
-                                    className={`nav-link ${activeTab === "chat" ? "active" : ""}`}
-                                    onClick={() => setActiveTab("chat")}
-                                    type="button"
-                                    role="tab"
-                                >
-                                    {t("sidebar.tabs.chat", "Chat")}
-                                </button>
-                            </li>
-
-                            {/* Pestañas solo para modo alumno */}
-                            {!isTeacherMode && exercises.length > 0 && (
-                                <li className="nav-item" role="presentation">
-                                    <button
-                                        className={`nav-link ${activeTab === "exercises" ? "active" : ""}`}
-                                        onClick={() => setActiveTab("exercises")}
-                                        type="button"
-                                        role="tab"
-                                        disabled={isLabBlocked}
-                                        title={
-                                            isLabBlocked
-                                                ? t("sidebar.tooltips.labBlocked", "Not available while lab is blocked")
-                                                : ""
-                                        }
-                                    >
-                                        {t("sidebar.tabs.exercises", "Exercises")}
-                                        {(exercisesWithExplanations.length > 0 ||
-                                            exercisesWithEvaluations.length > 0) && (
-                                            <span className="badge bg-primary ms-2">
-                                                {Math.max(
-                                                    exercisesWithExplanations.length,
-                                                    exercisesWithEvaluations.length,
-                                                )}
-                                            </span>
-                                        )}
-                                    </button>
-                                </li>
-                            )}
-
-                            {/* Pestaña de progreso - para alumnos cuando hay courseId */}
-                            {!isTeacherMode && props.courseId && (
-                                <li className="nav-item" role="presentation">
-                                    <button
-                                        className={`nav-link ${activeTab === "progress" ? "active" : ""}`}
-                                        onClick={() => setActiveTab("progress")}
-                                        type="button"
-                                        role="tab"
-                                    >
-                                        {t("sidebar.tabs.progress", "My progress")}
-                                    </button>
-                                </li>
-                            )}
-
-                            {/* Pestañas solo para modo profesor */}
-                            {isTeacherMode && (
-                                <>
-                                    {props.courseId && (
-                                        <li className="nav-item" role="presentation">
-                                            <button
-                                                className={`nav-link ${activeTab === "labs" ? "active" : ""}`}
-                                                onClick={() => setActiveTab("labs")}
-                                                type="button"
-                                                role="tab"
-                                            >
-                                                {t("sidebar.tabs.configureCourse", "Configure subject")}
-                                            </button>
-                                        </li>
-                                    )}
+                {/* Pestañas - ocultar cuando hay avisos de configuración o errores */}
+                {!needsConfiguration && !missingLLMConfig && !courseLoadError && !isCheckingConfig && (
+                    <ul className="nav nav-tabs mt-3 mb-0" role="tablist" key={`tabs-${isTeacherMode}-${reloadKey}`}>
+                        {!needsConfiguration && (
+                            <>
+                                {/* Chat - solo visible en laboratorios */}
+                                {isInLab && (
                                     <li className="nav-item" role="presentation">
                                         <button
-                                            className={`nav-link ${activeTab === "config" ? "active" : ""}`}
-                                            onClick={() => setActiveTab("config")}
+                                            className={`nav-link ${activeTab === "chat" ? "active" : ""}`}
+                                            onClick={() => setActiveTab("chat")}
                                             type="button"
                                             role="tab"
                                         >
-                                            {t("sidebar.tabs.configureLab", "Configure lab")}
+                                            {t("sidebar.tabs.chat", "Chat")}
                                         </button>
                                     </li>
-                                </>
-                            )}
-                        </>
-                    )}
-                </ul>
+                                )}
+
+                                {/* Pestañas solo para modo alumno */}
+                                {!isTeacherMode && exercises.length > 0 && (
+                                    <li className="nav-item" role="presentation">
+                                        <button
+                                            className={`nav-link ${activeTab === "exercises" ? "active" : ""}`}
+                                            onClick={() => setActiveTab("exercises")}
+                                            type="button"
+                                            role="tab"
+                                        >
+                                            {t("sidebar.tabs.exercises", "Exercises")}
+                                            {(exercisesWithExplanations.length > 0 ||
+                                                exercisesWithEvaluations.length > 0) && (
+                                                <span className="badge bg-primary ms-2">
+                                                    {Math.max(
+                                                        exercisesWithExplanations.length,
+                                                        exercisesWithEvaluations.length,
+                                                    )}
+                                                </span>
+                                            )}
+                                        </button>
+                                    </li>
+                                )}
+
+                                {/* Pestaña de progreso - para alumnos cuando hay courseId */}
+                                {!isTeacherMode && props.courseId && (
+                                    <li className="nav-item" role="presentation">
+                                        <button
+                                            className={`nav-link ${activeTab === "progress" ? "active" : ""}`}
+                                            onClick={() => setActiveTab("progress")}
+                                            type="button"
+                                            role="tab"
+                                        >
+                                            {t("sidebar.tabs.progress", "My progress")}
+                                        </button>
+                                    </li>
+                                )}
+
+                                {/* Pestañas solo para modo profesor */}
+                                {isTeacherMode && (
+                                    <>
+                                        {/* Configure section - solo visible cuando NO estamos en un lab */}
+                                        {!isInLab && props.courseId && (
+                                            <li className="nav-item" role="presentation">
+                                                <button
+                                                    className={`nav-link ${activeTab === "labs" ? "active" : ""}`}
+                                                    onClick={() => setActiveTab("labs")}
+                                                    type="button"
+                                                    role="tab"
+                                                >
+                                                    {t("sidebar.tabs.configureCourse", "Configure section")}
+                                                </button>
+                                            </li>
+                                        )}
+                                        {/* Configure lab - solo visible cuando estamos en un lab */}
+                                        {isInLab && (
+                                            <li className="nav-item" role="presentation">
+                                                <button
+                                                    className={`nav-link ${activeTab === "config" ? "active" : ""}`}
+                                                    onClick={() => setActiveTab("config")}
+                                                    type="button"
+                                                    role="tab"
+                                                >
+                                                    {t("sidebar.tabs.configureLab", "Configure lab")}
+                                                </button>
+                                            </li>
+                                        )}
+                                    </>
+                                )}
+                            </>
+                        )}
+                    </ul>
+                )}
             </div>
 
             {/* Área de contenido */}
@@ -241,8 +249,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = props => {
                         inputValue={inputValue}
                         isGenerating={isGenerating}
                         isChatDisabled={isChatDisabled}
-                        isCheckingBlocked={isCheckingBlocked}
-                        isLabBlocked={isLabBlocked}
                         isLoadingExercises={props.isLoadingExercises || false}
                         pageId={props.pageId}
                         hasExercisesLoaded={props.hasExercisesLoaded}
@@ -270,12 +276,15 @@ const ChatSidebar: React.FC<ChatSidebarProps> = props => {
                     <ExerciseConfigTab
                         exercises={exercises}
                         pageId={props.pageId || ""}
+                        courseId={props.courseId}
+                        pageName={pageName}
                         onConfigUpdate={handleConfigUpdate}
                         isActive={activeTab === "config"}
                     />
                 ) : activeTab === "labs" ? (
                     <LabConfigTab
                         courseId={props.courseId || ""}
+                        sectionLabIds={sectionLabIds}
                         onConfigUpdate={handleConfigUpdate}
                         isActive={activeTab === "labs"}
                     />

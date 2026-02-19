@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import type { Exercise } from '../../types/shared';
+import type { Exercise, ReasoningEffort, VerbosityLevel } from '../../types/shared';
 import { ExerciseConfigTabProps, ExerciseFlags } from './types';
 import { buildConfigMap, computePendingChanges, configsAreEqual, getDefaultFlags } from './utils';
 
-export const useExerciseConfig = ({ exercises, pageId, onConfigUpdate, isActive }: ExerciseConfigTabProps) => {
+export const useExerciseConfig = ({ exercises, pageId, courseId, onConfigUpdate, isActive }: ExerciseConfigTabProps) => {
     const [exerciseConfig, setExerciseConfig] = useState<Map<string, ExerciseFlags>>(new Map());
     const [originalConfig, setOriginalConfig] = useState<Map<string, ExerciseFlags>>(new Map());
     const [isSaving, setIsSaving] = useState(false);
@@ -11,14 +11,23 @@ export const useExerciseConfig = ({ exercises, pageId, onConfigUpdate, isActive 
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+    // Lab config state (verbosity, reasoning, context)
+    const [verbosity, setVerbosity] = useState<VerbosityLevel>("medium");
+    const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>("medium");
+    const [originalVerbosity, setOriginalVerbosity] = useState<VerbosityLevel>("medium");
+    const [originalReasoning, setOriginalReasoning] = useState<ReasoningEffort>("medium");
+    const [hasContext, setHasContext] = useState(false);
+    const [contextModalOpen, setContextModalOpen] = useState(false);
+
     // Modal states for exercise management
     const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
-    const [isAddingExercise, setIsAddingExercise] = useState(false);
     const [needsRefresh, setNeedsRefresh] = useState(false);
 
     useEffect(() => {
-        setHasUnsavedChanges(!configsAreEqual(exerciseConfig, originalConfig));
-    }, [exerciseConfig, originalConfig]);
+        const exerciseChanges = !configsAreEqual(exerciseConfig, originalConfig);
+        const labConfigChanges = verbosity !== originalVerbosity || reasoningEffort !== originalReasoning;
+        setHasUnsavedChanges(exerciseChanges || labConfigChanges);
+    }, [exerciseConfig, originalConfig, verbosity, originalVerbosity, reasoningEffort, originalReasoning]);
 
     // Limpiar mensajes después de 5 segundos
     useEffect(() => {
@@ -34,6 +43,7 @@ export const useExerciseConfig = ({ exercises, pageId, onConfigUpdate, isActive 
     useEffect(() => {
         if (isActive && pageId) {
             loadConfigFromStorage();
+            loadLabConfig();
         }
     }, [isActive, pageId]);
 
@@ -56,11 +66,37 @@ export const useExerciseConfig = ({ exercises, pageId, onConfigUpdate, isActive 
                 const config = buildConfigMap(response.data.exercises);
                 setExerciseConfig(config);
                 setOriginalConfig(new Map(config));
-                setHasUnsavedChanges(false);
+
+                // Check context status
+                setHasContext(response.data.exercises !== undefined);
             }
         } catch (error) {
             console.error("Error loading config from storage:", error);
             loadConfigFromProps();
+        }
+    };
+
+    const loadLabConfig = async () => {
+        if (!courseId) return;
+        try {
+            const response = await chrome.runtime.sendMessage({
+                action: "getLabData",
+                courseId: courseId,
+            });
+
+            if (response.success && response.data?.labs) {
+                const lab = response.data.labs.find((l: any) => l.id === pageId);
+                if (lab) {
+                    const v = lab.verbosity ?? "medium";
+                    const r = lab.reasoningEffort ?? "medium";
+                    setVerbosity(v);
+                    setReasoningEffort(r);
+                    setOriginalVerbosity(v);
+                    setOriginalReasoning(r);
+                }
+            }
+        } catch (error) {
+            console.error("Error loading lab config:", error);
         }
     };
 
@@ -91,12 +127,15 @@ export const useExerciseConfig = ({ exercises, pageId, onConfigUpdate, isActive 
 
     const handleSaveChanges = async () => {
         const changes = computePendingChanges(exerciseConfig, originalConfig);
-        if (changes.length === 0) return;
+        const hasLabConfigChanges = verbosity !== originalVerbosity || reasoningEffort !== originalReasoning;
+
+        if (changes.length === 0 && !hasLabConfigChanges) return;
 
         setSuccessMessage(null);
         setErrorMessage(null);
         setIsSaving(true);
         try {
+            // Save exercise config changes
             for (const change of changes) {
                 if (change.allowed !== undefined) {
                     await chrome.runtime.sendMessage({
@@ -127,6 +166,28 @@ export const useExerciseConfig = ({ exercises, pageId, onConfigUpdate, isActive 
                 });
             }
 
+            // Save lab config changes (verbosity, reasoning)
+            if (hasLabConfigChanges && courseId) {
+                if (verbosity !== originalVerbosity) {
+                    await chrome.runtime.sendMessage({
+                        action: "updateLabVerbosity",
+                        courseId: courseId,
+                        labId: pageId,
+                        verbosity: verbosity,
+                    });
+                }
+                if (reasoningEffort !== originalReasoning) {
+                    await chrome.runtime.sendMessage({
+                        action: "updateLabReasoningEffort",
+                        courseId: courseId,
+                        labId: pageId,
+                        reasoningEffort: reasoningEffort,
+                    });
+                }
+                setOriginalVerbosity(verbosity);
+                setOriginalReasoning(reasoningEffort);
+            }
+
             setOriginalConfig(new Map(exerciseConfig));
             setHasUnsavedChanges(false);
 
@@ -143,28 +204,13 @@ export const useExerciseConfig = ({ exercises, pageId, onConfigUpdate, isActive 
         }
     };
 
-    const handleDeleteExercise = async (exerciseName: string) => {
-        try {
-            await chrome.runtime.sendMessage({
-                action: "removeExercise",
-                pageId: pageId,
-                exerciseName,
-            });
 
-            // Reload config after deletion
-            await loadConfigFromStorage();
-
-            if (onConfigUpdate) {
-                onConfigUpdate();
-            }
-        } catch (error) {
-            console.error("Error deleting exercise:", error);
-            setErrorMessage("Error deleting exercise. Please try again.");
-        }
-    };
 
     const refreshExercises = async () => {
         setNeedsRefresh(true);
+        if (onConfigUpdate) {
+            await onConfigUpdate();
+        }
     };
 
     return {
@@ -178,9 +224,14 @@ export const useExerciseConfig = ({ exercises, pageId, onConfigUpdate, isActive 
         handleSaveChanges,
         editingExercise,
         setEditingExercise,
-        isAddingExercise,
-        setIsAddingExercise,
-        handleDeleteExercise,
         refreshExercises,
+        // Lab config
+        verbosity,
+        setVerbosity,
+        reasoningEffort,
+        setReasoningEffort,
+        hasContext,
+        contextModalOpen,
+        setContextModalOpen,
     };
 };

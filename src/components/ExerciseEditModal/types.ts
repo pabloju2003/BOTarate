@@ -6,6 +6,5 @@ export interface ExerciseEditModalProps {
     onClose: () => void;
     exercise?: Exercise;
     labId: string;
-    isAddMode?: boolean;
     onExerciseUpdate?: () => void;
 }

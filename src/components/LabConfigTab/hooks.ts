@@ -75,7 +75,6 @@ export const useLabConfigState = (courseId: string, isActive: boolean) => {
                 // Check context status for each lab
                 for (const lab of response.data.labs) {
                     config.set(lab.id, {
-                        required: lab.required ?? false,
                         verbosity: lab.verbosity ?? "medium",
                         reasoningEffort: lab.reasoningEffort ?? "medium",
                     });

@@ -13,6 +13,7 @@ export interface AgentConfig {
         conceptsFieldDescription: string;
         conceptsExamples: string;
         exerciseCriteria: string;
+        excludedExercises: string;
         learningObjectivesGuidance: string;
 
     };

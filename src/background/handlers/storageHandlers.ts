@@ -4,8 +4,24 @@ import { ExerciseStorageManager } from "../../util/storage/ExerciseStorageManage
 import { ExplanationStorageManager } from "../../util/storage/ExplanationStorageManager";
 import { LabStorageManager, ReasoningEffort, VerbosityLevel } from "../../util/storage/LabStorageManager";
 import { ModeStorageManager } from "../../util/storage/ModeStorageManager";
-import { ProgressConfigStorageManager } from "../../util/storage/ProgressConfigStorageManager";
 import { getCachedCourse } from "./dataHandlers";
+
+export function handleUpdateExercise(request: any, sendResponse: (response?: any) => void): boolean {
+    const { pageId, oldName, exercise } = request;
+
+    (async () => {
+        try {
+            await ExerciseStorageManager.updateExercise(pageId, oldName, exercise);
+            console.log(`Ejercicio actualizado en página ${pageId}: ${oldName} -> ${exercise?.name}`);
+            sendResponse({ success: true });
+        } catch (error: any) {
+            console.error("Error al actualizar ejercicio:", error);
+            sendResponse({ success: false, error: error.message });
+        }
+    })();
+
+    return true;
+}
 
 export function handleRemoveExerciseData(request: any, sendResponse: (response?: any) => void): boolean {
     const { pageId } = request;
@@ -84,23 +100,6 @@ export function handleRemoveChallengeExercisesExplanations(request: any, sendRes
     return true;
 }
 
-export function handleUpdateLabRequired(request: any, sendResponse: (response?: any) => void): boolean {
-    const { courseId, labId, required } = request;
-
-    (async () => {
-        try {
-            await LabStorageManager.updateLabRequired(courseId, labId, required);
-            console.log(`Estado 'required' actualizado para laboratorio ${labId}: ${required}`);
-            sendResponse({ success: true });
-        } catch (error: any) {
-            console.error('Error al actualizar estado de laboratorio:', error);
-            sendResponse({ success: false, error: error.message });
-        }
-    })();
-
-    return true;
-}
-
 export function handleUpdateLabVerbosity(request: any, sendResponse: (response?: any) => void): boolean {
     const { courseId, labId, verbosity } = request;
 
@@ -156,29 +155,6 @@ export function handleGetLabConfig(request: any, sendResponse: (response?: any) 
     return true;
 }
 
-export function handleSaveProgressConfig(request: any, sendResponse: (response?: any) => void): boolean {
-    const { config, courseId } = request;
-
-    (async () => {
-        try {
-            const sanitizedConfig = {
-                minScoreToPass: Math.min(Math.max(Number(config?.minScoreToPass ?? 5), 0), 10),
-                minChallengesPercentage: Math.min(Math.max(Number(config?.minChallengesPercentage ?? 100), 0), 100),
-            };
-
-            await ProgressConfigStorageManager.saveConfig(sanitizedConfig, courseId);
-            const logSuffix = courseId ? ' para curso ' + courseId : '';
-            console.log('Configuración de progreso guardada' + logSuffix);
-            sendResponse({ success: true, config: sanitizedConfig });
-        } catch (error: any) {
-            console.error("Error al guardar configuración de progreso:", error);
-            sendResponse({ success: false, error: error.message });
-        }
-    })();
-
-    return true;
-}
-
 export function handleSaveChatHistory(request: any, sendResponse: (response?: any) => void): boolean {
     const { pageId, exerciseName, chatHistory } = request;
 
@@ -197,10 +173,19 @@ export function handleSaveChatHistory(request: any, sendResponse: (response?: an
     return true;
 }
 
+/**
+ * Checks if the current user is a teacher.
+ * @deprecated Use handleCheckUserRoleForCourse instead for better reliability
+ */
 export function handleCheckUserRole(request: any, sendResponse: (response?: any) => void): boolean {
     (async () => {
         try {
-            // Si no hay caché válido, verificar el rol en Egela
+            // If courseId is provided in the request, use it directly
+            if (request.courseId) {
+                return handleCheckUserRoleForCourse(request, sendResponse);
+            }
+
+            // Otherwise, try to get courseId from cached course
             const course: Course = getCachedCourse();
 
             if (!course) {
@@ -209,43 +194,8 @@ export function handleCheckUserRole(request: any, sendResponse: (response?: any)
                 return;
             }
 
-            const courseId = course.id;
-
-            // In dev mode, check if we should force teacher role
-            if (import.meta.env.DEV) {
-                const devConfig = await ModeStorageManager.getDevModeConfig();
-                if (devConfig.forceTeacherRole) {
-                    console.log(`[handleCheckUserRole] DEV MODE: Forcing teacher role for course ${courseId}`);
-                    sendResponse({ success: true, isTeacher: true });
-                    return;
-                }
-            }
-
-            // Verificar si hay un caché válido del rol del usuario para este curso
-            const cachedRole = await ModeStorageManager.getUserRoleForCourse(courseId);
-
-            if (cachedRole && cachedRole.isValid) {
-                console.log(`[handleCheckUserRole] Usando caché del rol para curso ${courseId}: ${cachedRole.isTeacher ? 'Profesor' : 'Alumno'}`);
-                sendResponse({ success: true, isTeacher: cachedRole.isTeacher });
-                return;
-            }
-
-            // Verificar el rol del usuario
-            let isTeacher;
-            try {
-                isTeacher = await course.isCurrentUserTeacher();
-            } catch (error: any) {
-                console.error('[handleCheckUserRole] Error al verificar rol del usuario en Egela:', error);
-                sendResponse({ success: false, error: error.message, isTeacher: false });
-                return;
-            }
-
-            console.log(`[handleCheckUserRole] Usuario es profesor en curso ${courseId}: ${isTeacher}`);
-
-            // Guardar en caché para este curso
-            await ModeStorageManager.saveUserRoleForCourse(courseId, isTeacher);
-
-            sendResponse({ success: true, isTeacher });
+            // Delegate to handleCheckUserRoleForCourse with the courseId
+            return handleCheckUserRoleForCourse({ courseId: course.id }, sendResponse);
         } catch (error: any) {
             console.error('[handleCheckUserRole] Error general al verificar rol del usuario:', error);
             sendResponse({ success: false, error: error.message, isTeacher: false });
@@ -300,50 +250,7 @@ export function handleUpdateConcepts(request: any, sendResponse: (response?: any
     return true;
 }
 
-export function handleAddExercise(request: any, sendResponse: (response?: any) => void): boolean {
-    const { pageId, exercise } = request;
-    (async () => {
-        try {
-            await ExerciseStorageManager.addExercise(pageId, exercise);
-            console.log(`Ejercicio añadido a página ${pageId}: ${exercise.name}`);
-            sendResponse({ success: true });
-        } catch (error: any) {
-            console.error('Error al añadir ejercicio:', error);
-            sendResponse({ success: false, error: error.message });
-        }
-    })();
-    return true;
-}
 
-export function handleRemoveExercise(request: any, sendResponse: (response?: any) => void): boolean {
-    const { pageId, exerciseName } = request;
-    (async () => {
-        try {
-            await ExerciseStorageManager.removeExercise(pageId, exerciseName);
-            console.log(`Ejercicio eliminado de página ${pageId}: ${exerciseName}`);
-            sendResponse({ success: true });
-        } catch (error: any) {
-            console.error('Error al eliminar ejercicio:', error);
-            sendResponse({ success: false, error: error.message });
-        }
-    })();
-    return true;
-}
-
-export function handleUpdateExercise(request: any, sendResponse: (response?: any) => void): boolean {
-    const { pageId, oldName, exercise } = request;
-    (async () => {
-        try {
-            await ExerciseStorageManager.updateExercise(pageId, oldName, exercise);
-            console.log(`Ejercicio actualizado en página ${pageId}: ${oldName} -> ${exercise.name}`);
-            sendResponse({ success: true });
-        } catch (error: any) {
-            console.error('Error al actualizar ejercicio:', error);
-            sendResponse({ success: false, error: error.message });
-        }
-    })();
-    return true;
-}
 
 /**
  * Fetches the user's course list from the eGela dashboard.

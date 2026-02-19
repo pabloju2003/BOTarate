@@ -10,7 +10,7 @@ export const useEvaluations = (isOpen: boolean, exerciseName: string, pageId?: s
         if (isOpen) {
             loadEvaluations();
         }
-    }, [isOpen, exerciseName]);
+    }, [isOpen, exerciseName, pageId]);
 
     const loadEvaluations = async () => {
         setIsLoading(true);
@@ -22,11 +22,16 @@ export const useEvaluations = (isOpen: boolean, exerciseName: string, pageId?: s
             });
 
             if (response.success && response.evaluations) {
-                setEvaluations(response.evaluations);
-                // Seleccionar la evaluación más reciente por defecto
-                if (response.evaluations.length > 0) {
-                    setSelectedEvaluation(response.evaluations[0]);
+                const sortedEvaluations = [...response.evaluations].sort((a, b) => b.timestamp - a.timestamp);
+                setEvaluations(sortedEvaluations);
+                if (sortedEvaluations.length > 0) {
+                    setSelectedEvaluation(sortedEvaluations[0]);
+                } else {
+                    setSelectedEvaluation(null);
                 }
+            } else {
+                setEvaluations([]);
+                setSelectedEvaluation(null);
             }
         } catch (error) {
             console.error("[EvaluationListModal] Error loading evaluations:", error);
