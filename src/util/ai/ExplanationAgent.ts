@@ -55,7 +55,7 @@ class ExplanationAgent extends BaseAgent {
         return `- Use these tools only if the student asks for examples or concrete data present in the lab content (e.g., INSERT rows, diagrams).
 - Try to filter as much as possible to return only what is strictly relevant.
 - getPageContent(pageId): retrieves lab page content to locate file markers [FILEx:TEXT:name.sql] and image markers [IMAGE#].
-- getFilteredFileContent(pageId, fileId, regexPattern): extracts only necessary sections from text files. For example, to get only INSERTs for tables "students" and "enrollments" use a pattern like "INSERT\\s+INTO\\s+(students|enrollments)[\\s\\S]+?;".
+- getFilteredFileContent(pageId, fileId, regexPattern): extracts only necessary sections from text files. Use a regex pattern to filter specific content (e.g., function definitions, data declarations, or structural elements relevant to the exercise).
 - analyzeImage(pageId, imageId, prompt): analyzes images in the page (marked as [IMAGE#] or [IMAGE#: description]). Use it to extract information from diagrams, ER schemas, screenshots, etc. Provide a clear prompt describing what you need from the image.
 - You must always call getPageContent first to identify available files/images and their IDs before using getFilteredFileContent or analyzeImage.`;
     }

@@ -109,7 +109,7 @@ const TOOLS = [
         type: 'function',
         function: {
             name: 'solveExercise',
-            description: 'Inicia el proceso de resolución de un ejercicio por parte del estudiante. Esta herramienta abrirá el modal de resolución donde el estudiante puede introducir su solución SQL para ser evaluada. Usa esta herramienta cuando el usuario indique que quiere resolver, intentar, o enviar su solución para un ejercicio.',
+            description: 'Inicia el proceso de resolución de un ejercicio por parte del estudiante. Esta herramienta abrirá el modal de resolución donde el estudiante puede introducir su solución para ser evaluada. Usa esta herramienta cuando el usuario indique que quiere resolver, intentar, o enviar su solución para un ejercicio.',
             parameters: {
                 type: 'object',
                 properties: {
@@ -127,7 +127,7 @@ const TOOLS = [
         type: 'function',
         function: {
             name: 'getFilteredFileContent',
-            description: 'Obtiene el contenido de un archivo de texto filtrado por una expresión regular. Útil para extraer partes específicas de archivos SQL, como CREATE TABLE, INSERT, etc. sin cargar todo el contenido.',
+            description: 'Obtiene el contenido de un archivo de texto filtrado por una expresión regular. Útil para extraer partes específicas de archivos de código o datos, sin cargar todo el contenido.',
             parameters: {
                 type: 'object',
                 properties: {
@@ -141,7 +141,7 @@ const TOOLS = [
                     },
                     regexPattern: {
                         type: 'string',
-                        description: 'Expresión regular para filtrar el contenido. Ejemplos: "CREATE\\\\s+TABLE[\\\\s\\\\S]+?;\\\\n" para obtener CREATE TABLEs, "INSERT[\\\\s\\\\S]+?;\\\\n" para INSERTs'
+                        description: 'Expresión regular para filtrar el contenido. Usa patrones regex para extraer secciones específicas del archivo (definiciones, declaraciones, estructuras de datos, etc.)'
                     }
                 },
                 required: ['pageId', 'fileId', 'regexPattern'],
@@ -204,7 +204,7 @@ const TOOLS = [
                     },
                     exercise_context: {
                         type: 'string',
-                        description: 'Contexto adicional relevante para los ejercicios (por ejemplo, script SQL de esquema de base de datos, especificaciones técnicas, etc.). Vacío si no hay contexto.'
+                        description: 'Contexto adicional relevante para los ejercicios (por ejemplo, esquema de datos, estructura de documentos, especificaciones técnicas, etc.). Vacío si no hay contexto.'
                     },
                     concepts: {
                         type: 'array',
@@ -234,7 +234,7 @@ const EXERCISE_AGENT_TOOLS = [
         type: 'function',
         function: {
             name: 'getFilteredFileContent',
-            description: 'Obtiene el contenido de un archivo de texto filtrado por una expresión regular. Útil para extraer partes específicas de archivos SQL, como CREATE TABLE, INSERT, etc. sin cargar todo el contenido.',
+            description: 'Obtiene el contenido de un archivo de texto filtrado por una expresión regular. Útil para extraer partes específicas de archivos de código o datos, sin cargar todo el contenido.',
             parameters: {
                 type: 'object',
                 properties: {
@@ -248,7 +248,7 @@ const EXERCISE_AGENT_TOOLS = [
                     },
                     regexPattern: {
                         type: 'string',
-                        description: 'Expresión regular para filtrar el contenido. Ejemplos: "CREATE\\\\s+TABLE[\\\\s\\\\S]+?;\\\\n" para obtener CREATE TABLEs, "INSERT[\\\\s\\\\S]+?;\\\\n" para INSERTs'
+                        description: 'Expresión regular para filtrar el contenido. Usa patrones regex para extraer secciones específicas del archivo (definiciones, declaraciones, estructuras de datos, etc.)'
                     }
                 },
                 required: ['pageId', 'fileId', 'regexPattern'],
@@ -311,7 +311,7 @@ const EXERCISE_AGENT_TOOLS = [
                     },
                     exercise_context: {
                         type: 'string',
-                        description: 'Contexto adicional relevante para los ejercicios (por ejemplo, script SQL de esquema de base de datos, especificaciones técnicas, etc.). Vacío si no hay contexto.'
+                        description: 'Contexto adicional relevante para los ejercicios (por ejemplo, esquema de datos, estructura de documentos, especificaciones técnicas, etc.). Vacío si no hay contexto.'
                     },
                     concepts: {
                         type: 'array',
