@@ -6,6 +6,7 @@ import LabContextModal from "../LabContextModal";
 import { useExerciseConfig } from "./hooks";
 import { ExerciseConfigTabProps } from "./types";
 import { getDefaultFlags } from "./utils";
+import type { AIRole } from "../../types/shared";
 
 const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
     const { t } = useTranslation();
@@ -15,8 +16,7 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
         hasUnsavedChanges,
         successMessage,
         errorMessage,
-        handleToggleChallenge,
-        handleTogglePicky,
+        handleRoleChange,
         handleSaveChanges,
         editingExercise,
         setEditingExercise,
@@ -31,8 +31,12 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
         setContextModalOpen,
     } = useExerciseConfig(props);
 
-    // Función auxiliar para renderizar HTML seguro
-    const renderHTML = (html: string) => <span dangerouslySetInnerHTML={{ __html: html }} />;
+    const roleColumns: Array<{ role: AIRole; label: string }> = [
+        { role: "observer", label: "Observer" },
+        { role: "proofreader", label: "Proofreader" },
+        { role: "tutor", label: "Tutor" },
+        { role: "challenger", label: "Challenger" },
+    ];
 
     const isInLab = props.pageId && props.pageId.trim() !== "";
 
@@ -44,10 +48,14 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
                     <h6 className="alert-heading">
                         <i className="bi bi-info-circle"></i> {t("options.exerciseConfig.infoTitle")}
                     </h6>
-                    <p className="mb-2">{renderHTML(t("options.exerciseConfig.infoDesc"))}</p>
+                    <p className="mb-2">
+                        Configura el rol de cada ejercicio para controlar cómo responde el agente.
+                    </p>
                     <ul className="mb-2 small">
-                        <li>{renderHTML(t("options.exerciseConfig.infoList.challenge"))}</li>
-                        <li>{renderHTML(t("options.exerciseConfig.infoList.picky"))}</li>
+                        <li><strong>Observer:</strong> el agente observa y orienta sin resolver directamente.</li>
+                        <li><strong>Proofreader:</strong> el agente actúa como revisor crítico y puede señalar o proponer correcciones.</li>
+                        <li><strong>Tutor:</strong> comportamiento normal de tutor (rol por defecto).</li>
+                        <li><strong>Challenger:</strong> ejercicio solo estudiante, sin explicación directa.</li>
                     </ul>
                     <p className="mb-0 small">{t("options.exerciseConfig.infoFooter")}</p>
                 </div>
@@ -72,10 +80,14 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
                 <h6 className="alert-heading">
                     <i className="bi bi-info-circle"></i> {t("options.exerciseConfig.infoTitle")}
                 </h6>
-                <p className="mb-2">{renderHTML(t("options.exerciseConfig.infoDesc"))}</p>
+                <p className="mb-2">
+                    Configura el rol de cada ejercicio para controlar cómo responde el agente.
+                </p>
                 <ul className="mb-2 small">
-                    <li>{renderHTML(t("options.exerciseConfig.infoList.challenge"))}</li>
-                    <li>{renderHTML(t("options.exerciseConfig.infoList.picky"))}</li>
+                    <li><strong>Observer:</strong> el agente observa y orienta sin resolver directamente.</li>
+                    <li><strong>Proofreader:</strong> el agente actúa como revisor crítico y puede señalar o proponer correcciones.</li>
+                    <li><strong>Tutor:</strong> comportamiento normal de tutor (rol por defecto).</li>
+                    <li><strong>Challenger:</strong> ejercicio solo estudiante, sin explicación directa.</li>
                 </ul>
                 <p className="mb-0 small">{t("options.exerciseConfig.infoFooter")}</p>
             </div>
@@ -129,7 +141,7 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
                                 scope="col"
                                 className="fw-bold"
                                 style={{
-                                    width: "60%",
+                                    width: "44%",
                                     backgroundColor: "#f8f9fa",
                                     color: "black",
                                     borderColor: "#dee2e6",
@@ -138,39 +150,28 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
                             >
                                 {t("options.exerciseConfig.table.headerName")}
                             </th>
-                            <th
-                                scope="col"
-                                className="text-center fw-bold"
-                                style={{
-                                    width: "20%",
-                                    backgroundColor: "#f8f9fa",
-                                    color: "black",
-                                    borderColor: "#dee2e6",
-                                    verticalAlign: "middle",
-                                }}
-                            >
-                                {t("options.exerciseConfig.table.headerChallenge")}
-                            </th>
-                            <th
-                                scope="col"
-                                className="text-center fw-bold"
-                                style={{
-                                    width: "20%",
-                                    backgroundColor: "#f8f9fa",
-                                    color: "black",
-                                    borderColor: "#dee2e6",
-                                    verticalAlign: "middle",
-                                }}
-                            >
-                                {t("options.exerciseConfig.table.headerPicky")}
-                            </th>
+                            {roleColumns.map(({ role, label }) => (
+                                <th
+                                    key={`header-${role}`}
+                                    scope="col"
+                                    className="text-center fw-bold"
+                                    style={{
+                                        width: "14%",
+                                        backgroundColor: "#f8f9fa",
+                                        color: "black",
+                                        borderColor: "#dee2e6",
+                                        verticalAlign: "middle",
+                                    }}
+                                >
+                                    {label}
+                                </th>
+                            ))}
                         </tr>
                     </thead>
                     <tbody>
                         {props.exercises.map(exercise => {
                             const flags = exerciseConfig.get(exercise.name) ?? getDefaultFlags();
-                            const isChallenge = !flags.allowed;
-                            const isPicky = flags.isPicky;
+                            const selectedRole: AIRole = flags.role;
                             return (
                                 <tr key={exercise.name}>
                                     <td style={{ verticalAlign: "middle" }}>
@@ -197,50 +198,42 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="text-center" style={{ verticalAlign: "middle" }}>
-                                        <div className="d-flex justify-content-center align-items-center">
-                                            <input
-                                                className="form-check-input"
-                                                type="checkbox"
-                                                role="switch"
-                                                id={`challenge-switch-${exercise.name}`}
-                                                checked={isChallenge}
-                                                onChange={() => handleToggleChallenge(exercise.name)}
-                                                disabled={isSaving}
-                                                style={{ cursor: "pointer", margin: 0 }}
-                                            />
-                                            <label
-                                                className="form-check-label visually-hidden"
-                                                htmlFor={`challenge-switch-${exercise.name}`}
+                                    {roleColumns.map(({ role, label }) => {
+                                        const inputId = `${exercise.name}-role-${role}`;
+                                        return (
+                                            <td
+                                                key={inputId}
+                                                className="text-center"
+                                                style={{ verticalAlign: "middle", position: "static" }}
                                             >
-                                                {isChallenge
-                                                    ? t("options.exerciseConfig.table.switchChallengeOn")
-                                                    : t("options.exerciseConfig.table.switchChallengeOff")}
-                                            </label>
-                                        </div>
-                                    </td>
-                                    <td className="text-center" style={{ verticalAlign: "middle" }}>
-                                        <div className="d-flex justify-content-center align-items-center">
-                                            <input
-                                                className="form-check-input"
-                                                type="checkbox"
-                                                role="switch"
-                                                id={`picky-switch-${exercise.name}`}
-                                                checked={isPicky}
-                                                onChange={() => handleTogglePicky(exercise.name)}
-                                                disabled={isSaving}
-                                                style={{ cursor: "pointer", margin: 0 }}
-                                            />
-                                            <label
-                                                className="form-check-label visually-hidden"
-                                                htmlFor={`picky-switch-${exercise.name}`}
-                                            >
-                                                {isPicky
-                                                    ? t("options.exerciseConfig.table.switchPickyOn")
-                                                    : t("options.exerciseConfig.table.switchPickyOff")}
-                                            </label>
-                                        </div>
-                                    </td>
+                                                <div className="d-flex justify-content-center align-items-center" style={{ position: "static" }}>
+                                                    <input
+                                                        className="form-check-input"
+                                                        type="radio"
+                                                        name={`role-group-${exercise.name}`}
+                                                        id={inputId}
+                                                        checked={selectedRole === role}
+                                                        onChange={() => handleRoleChange(exercise.name, role)}
+                                                        disabled={isSaving}
+                                                        style={{
+                                                            cursor: "pointer",
+                                                            margin: 0,
+                                                            position: "static",
+                                                            float: "none",
+                                                            top: "auto",
+                                                            left: "auto",
+                                                        }}
+                                                    />
+                                                    <label
+                                                        className="form-check-label visually-hidden"
+                                                        htmlFor={inputId}
+                                                    >
+                                                        {`${exercise.name} - ${label}`}
+                                                    </label>
+                                                </div>
+                                            </td>
+                                        );
+                                    })}
                                 </tr>
                             );
                         })}

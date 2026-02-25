@@ -1,5 +1,6 @@
 import type { Course } from "../../util/egela/Course";
 import { getUserCourses, isUserTeacherInCourse } from "../../util/egela/EgelaDashboard";
+import type { AIRole } from "../../types/shared";
 import { ExerciseStorageManager } from "../../util/storage/ExerciseStorageManager";
 import { ExplanationStorageManager } from "../../util/storage/ExplanationStorageManager";
 import { LabStorageManager, ReasoningEffort, VerbosityLevel } from "../../util/storage/LabStorageManager";
@@ -42,33 +43,16 @@ export function handleRemoveExerciseData(request: any, sendResponse: (response?:
     return true;
 }
 
-export function handleUpdateExerciseAllowed(request: any, sendResponse: (response?: any) => void): boolean {
-    const { pageId, exerciseName, allowed } = request;
+export function handleUpdateExerciseRole(request: any, sendResponse: (response?: any) => void): boolean {
+    const { pageId, exerciseName, role } = request as { pageId: string; exerciseName: string; role: AIRole };
 
     (async () => {
         try {
-            await ExerciseStorageManager.updateExerciseAllowed(pageId, exerciseName, allowed);
-            console.log(`Estado 'allowed' actualizado para ${exerciseName}: ${allowed}`);
+            await ExerciseStorageManager.updateExerciseRole(pageId, exerciseName, role);
+            console.log(`Rol actualizado para ${exerciseName}: ${role}`);
             sendResponse({ success: true });
         } catch (error: any) {
-            console.error('Error al actualizar estado de ejercicio:', error);
-            sendResponse({ success: false, error: error.message });
-        }
-    })();
-
-    return true;
-}
-
-export function handleUpdateExercisePicky(request: any, sendResponse: (response?: any) => void): boolean {
-    const { pageId, exerciseName, isPicky } = request;
-
-    (async () => {
-        try {
-            await ExerciseStorageManager.updateExercisePicky(pageId, exerciseName, isPicky);
-            console.log(`Estado 'picky' actualizado para ${exerciseName}: ${isPicky}`);
-            sendResponse({ success: true });
-        } catch (error: any) {
-            console.error('Error al actualizar picky del ejercicio:', error);
+            console.error('Error al actualizar rol del ejercicio:', error);
             sendResponse({ success: false, error: error.message });
         }
     })();

@@ -1,5 +1,6 @@
 export type VerbosityLevel = "low" | "medium" | "high";
 export type ReasoningEffort = "minimal" | "low" | "medium" | "high";
+export type AIRole = "observer" | "proofreader" | "tutor" | "challenger";
 
 export interface Lab {
     id: string;
@@ -12,8 +13,7 @@ export interface Lab {
 export interface Exercise {
     name: string;
     statement: string;
-    allowed?: boolean;
-    isPicky?: boolean;
+    role?: AIRole;
 }
 
 export interface Step {

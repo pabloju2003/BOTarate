@@ -4,8 +4,7 @@ import { useTranslation } from "react-i18next";
 interface Exercise {
     name: string;
     statement: string;
-    allowed?: boolean;
-    isPicky?: boolean;
+    role?: 'observer' | 'proofreader' | 'tutor' | 'challenger';
 }
 
 interface ExercisesTabProps {
@@ -58,8 +57,8 @@ const ExercisesTab: React.FC<ExercisesTabProps> = ({
             {exercises.map((exercise, index) => {
                 const hasExplanation = exercisesWithExplanations.includes(exercise.name);
                 const hasEvaluation = exercisesWithEvaluations.includes(exercise.name);
-                const isChallenge = exercise.allowed === false;
-                // const isPicky = exercise.isPicky === true; // No mostrar para estudiantes
+                const isObserver = exercise.role === 'observer';
+                // const isPicky = exercise.role === 'proofreader'; // No mostrar para estudiantes
 
                 return (
                     <div
@@ -70,7 +69,7 @@ const ExercisesTab: React.FC<ExercisesTabProps> = ({
                         <div className="d-flex w-100 justify-content-between align-items-center">
                             <div className="d-flex align-items-center">
                                 <h6 className="mb-0">{exercise.name}</h6>
-                                {isChallenge && (
+                                {isObserver && (
                                     <span className="badge bg-warning text-dark ms-2">{t("exercises.challenge")}</span>
                                 )}
                                 {/* {isPicky && (

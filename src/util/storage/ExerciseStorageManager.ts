@@ -1,4 +1,4 @@
-import type { ExerciseDataForStorage, Lab } from "../../types/shared";
+import type { AIRole, ExerciseDataForStorage, Lab } from "../../types/shared";
 import { BaseStorageManager } from "./BaseStorageManager";
 import { LabStorageManager } from "./LabStorageManager";
 
@@ -8,6 +8,22 @@ import { LabStorageManager } from "./LabStorageManager";
  */
 export class ExerciseStorageManager extends BaseStorageManager {
     private static readonly STORAGE_KEY_PREFIX = 'exercise_data_';
+
+    private static resolveRole(exercise: { role?: AIRole } & Record<string, any>): AIRole {
+        if (exercise.role) {
+            return exercise.role;
+        }
+
+        if (exercise.allowed === false) {
+            return 'challenger';
+        }
+
+        if (exercise.isPicky === true) {
+            return 'proofreader';
+        }
+
+        return 'tutor';
+    }
 
     /**
      * Saves exercise data for a page to storage
@@ -19,14 +35,20 @@ export class ExerciseStorageManager extends BaseStorageManager {
      */
     static async saveExerciseData(
         pageId: string,
-        exercises: Array<{ name: string; statement: string; allowed?: boolean; isPicky?: boolean }> | import("../../types/shared").Exercise[],
+        exercises: Array<{ name: string; statement: string; role?: AIRole } & Record<string, any>> | import("../../types/shared").Exercise[],
         exerciseContext?: string,
         concepts?: string[],
         learningObjectives?: string
     ): Promise<void> {
+        const normalizedExercises = exercises.map(ex => ({
+            name: ex.name,
+            statement: ex.statement,
+            role: this.resolveRole(ex as { role?: AIRole } & Record<string, any>),
+        }));
+
         const data: ExerciseDataForStorage = {
             pageId,
-            exercises,
+            exercises: normalizedExercises,
             exerciseContext,
             concepts,
             learningObjectives
@@ -78,12 +100,12 @@ export class ExerciseStorageManager extends BaseStorageManager {
     }
 
     /**
-     * Updates the 'allowed' status of a specific exercise
+     * Updates the role of a specific exercise
      * @param pageId Page ID
      * @param exerciseName Exercise name
-     * @param allowed New allowed/blocked status
+     * @param role New role
      */
-    static async updateExerciseAllowed(pageId: string, exerciseName: string, allowed: boolean): Promise<void> {
+    static async updateExerciseRole(pageId: string, exerciseName: string, role: AIRole): Promise<void> {
         const data = await this.getExerciseData(pageId);
         if (!data) {
             throw new Error(`No exercise data found for page ${pageId}`);
@@ -94,7 +116,7 @@ export class ExerciseStorageManager extends BaseStorageManager {
             throw new Error(`No se encontró el ejercicio ${exerciseName}`);
         }
 
-        exercise.allowed = allowed;
+        exercise.role = role;
 
         await this.saveExerciseData(
             pageId,
@@ -141,31 +163,6 @@ export class ExerciseStorageManager extends BaseStorageManager {
             name: trimmedName,
             statement: trimmedStatement,
         };
-
-        await this.saveExerciseData(
-            pageId,
-            data.exercises,
-            data.exerciseContext,
-            data.concepts,
-            data.learningObjectives
-        );
-    }
-
-    /**
-     * Updates the "picky" status of a specific exercise
-     */
-    static async updateExercisePicky(pageId: string, exerciseName: string, isPicky: boolean): Promise<void> {
-        const data = await this.getExerciseData(pageId);
-        if (!data) {
-            throw new Error(`No se encontraron datos de ejercicios para la página ${pageId}`);
-        }
-
-        const exercise = data.exercises.find(ex => ex.name === exerciseName);
-        if (!exercise) {
-            throw new Error(`No se encontró el ejercicio ${exerciseName}`);
-        }
-
-        exercise.isPicky = isPicky;
 
         await this.saveExerciseData(
             pageId,

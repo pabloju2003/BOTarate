@@ -187,11 +187,17 @@ ${pageContent}`;
             const existingExerciseData = await ExerciseStorageManager.getExerciseData(pageId);
             const exerciseDataToStore = exercises.map(ex => {
                 const previous = existingExerciseData?.exercises.find(prev => prev.name === ex.name);
+                const previousAny = previous as any;
+                const exAny = ex as any;
+                const previousRole = previous?.role
+                    ?? (previousAny?.allowed === false ? 'challenger' : previousAny?.isPicky === true ? 'proofreader' : undefined);
+                const currentRole = ex.role
+                    ?? (exAny?.allowed === false ? 'challenger' : exAny?.isPicky === true ? 'proofreader' : undefined);
+
                 return {
                     name: ex.name,
                     statement: ex.statement,
-                    allowed: previous?.allowed ?? ex.allowed,
-                    isPicky: previous?.isPicky ?? ex.isPicky,
+                    role: previousRole ?? currentRole ?? 'tutor',
                 };
             });
             await ExerciseStorageManager.saveExerciseData(

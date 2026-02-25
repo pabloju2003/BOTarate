@@ -18,8 +18,7 @@ const PAGE_VIEW_HREF = "https://egela.ehu.eus/mod/page/view.php";
 interface Exercise {
     name: string;
     statement: string;
-    allowed?: boolean;
-    isPicky?: boolean;
+    role?: 'observer' | 'proofreader' | 'tutor' | 'challenger';
 }
 
 type ViewState = "loading" | "chat" | "hidden";
@@ -497,8 +496,7 @@ const ExtensionContent: React.FC = () => {
             setExercises(
                 data.exercises.map((exercise: Exercise) => ({
                     ...exercise,
-                    allowed: exercise.allowed ?? true,
-                    isPicky: exercise.isPicky ?? false,
+                    role: exercise.role ?? ((exercise as any).allowed === false ? 'challenger' : (exercise as any).isPicky === true ? 'proofreader' : 'tutor'),
                 })),
             );
         }

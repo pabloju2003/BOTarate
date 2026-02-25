@@ -327,8 +327,7 @@ export const useChatSidebar = (props: ChatSidebarProps) => {
                 const loaded = resp.data.exercises.map((ex: any) => ({
                     name: ex.name,
                     statement: ex.statement,
-                    allowed: ex.allowed ?? true,
-                    isPicky: ex.isPicky ?? false,
+                    role: ex.role ?? (ex.allowed === false ? 'challenger' : ex.isPicky === true ? 'proofreader' : 'tutor'),
                 }));
                 setExercises(loaded);
             } else {
@@ -421,8 +420,7 @@ export const useChatSidebar = (props: ChatSidebarProps) => {
                         response.data.exercises.map((ex: any) => ({
                             name: ex.name,
                             statement: ex.statement,
-                            allowed: ex.allowed ?? true,
-                            isPicky: ex.isPicky ?? false,
+                            role: ex.role ?? (ex.allowed === false ? 'challenger' : ex.isPicky === true ? 'proofreader' : 'tutor'),
                         }))
                     );
                 }

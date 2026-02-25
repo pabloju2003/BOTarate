@@ -81,11 +81,21 @@ export function handleGenerateExplanation(request: any, sendResponse: (response?
             const exerciseData = await ExerciseStorageManager.getExerciseData(pageId);
             if (exerciseData) {
                 const exercise = exerciseData.exercises.find(ex => ex.name === exerciseName);
-                if (exercise?.allowed === false) {
-                    console.log(`Intento de explicar ejercicio bloqueado: ${exerciseName}`);
+                const role = exercise?.role ?? 'tutor';
+                if (role === 'observer') {
+                    console.log(`Intento de explicar ejercicio con IA deshabilitada (observer): ${exerciseName}`);
                     sendResponse({
                         success: false,
-                        error: t("errors.exerciseBlocked", { exerciseName: exerciseName }),
+                        error: `La IA no está disponible para este ejercicio (${exerciseName}).`,
+                    });
+                    return;
+                }
+
+                if (role === 'proofreader') {
+                    console.log(`Intento de explicar ejercicio bloqueado por rol proofreader: ${exerciseName}`);
+                    sendResponse({
+                        success: false,
+                        error: `Este ejercicio está en modo proofreader y no permite explicaciones paso a paso (${exerciseName}).`,
                     });
                     return;
                 }
@@ -111,10 +121,10 @@ export function handleGenerateExplanation(request: any, sendResponse: (response?
                     }
                 }
 
-                // Check if the exercise is marked as picky
-                const isPicky = exercise?.isPicky === true;
+                // In challenger mode, explanations include intentional mistakes
+                const isPicky = role === 'challenger';
                 if (isPicky) {
-                    console.log(`Ejercicio ${exerciseName} marcado como picky - se introducirán errores intencionales`);
+                    console.log(`Ejercicio ${exerciseName} en modo challenger - se introducirán errores intencionales`);
                 }
 
                 const explanation = await explanationAgent.generateExplanation(
@@ -164,20 +174,43 @@ export function handleEvaluateSolution(request: any, sendResponse: (response?: a
 
     (async () => {
         try {
+            let role: 'observer' | 'proofreader' | 'tutor' | 'challenger' = 'tutor';
+            if (pageId) {
+                const exerciseData = await ExerciseStorageManager.getExerciseData(pageId);
+                const exercise = exerciseData?.exercises.find(ex => ex.name === exerciseName);
+                role = exercise?.role ?? 'tutor';
+
+                if (role === 'observer') {
+                    console.log(`Intento de evaluar ejercicio con IA deshabilitada (observer): ${exerciseName}`);
+                    sendResponse({
+                        success: false,
+                        error: `La IA no está disponible para este ejercicio (${exerciseName}).`,
+                    });
+                    return;
+                }
+            }
+
             // Get accumulated concepts from current and previous required labs
             let accumulatedConcepts: string[] | undefined;
             if (courseId && pageId) {
                 accumulatedConcepts = await ExerciseStorageManager.getAccumulatedConcepts(courseId, pageId);
             }
 
-            const evaluation = await evaluationAgent.evaluateSolution(
-                exerciseName,
-                exerciseStatement,
-                studentSolution,
-                exercise_context,
-                accumulatedConcepts,
-                learning_objectives
-            );
+            const evaluation = role === 'proofreader'
+                ? await evaluationAgent.evaluateSyntaxOnly(
+                    exerciseName,
+                    exerciseStatement,
+                    studentSolution,
+                    exercise_context
+                )
+                : await evaluationAgent.evaluateSolution(
+                    exerciseName,
+                    exerciseStatement,
+                    studentSolution,
+                    exercise_context,
+                    accumulatedConcepts,
+                    learning_objectives
+                );
 
             console.log(`Solución evaluada con puntuación: ${evaluation.score}/10`);
 
@@ -260,9 +293,9 @@ export function handleInitializeExplanationChat(request: any, sendResponse: (res
                 if (exerciseData) {
                     concepts = exerciseData.concepts;
                     learningObjectives = exerciseData.learningObjectives;
-                    // Check if the exercise is marked as picky
+                    // In challenger mode, chat context must preserve picky behavior
                     const exercise = exerciseData.exercises.find(ex => ex.name === exerciseName);
-                    isPicky = exercise?.isPicky === true;
+                    isPicky = exercise?.role === 'challenger';
                 }
 
                 const progressSummary = await buildProgressSummary(courseId);
@@ -323,7 +356,7 @@ async function restoreExplanationContext(
         concepts = exerciseData.concepts;
         learningObjectives = exerciseData.learningObjectives;
         const exercise = exerciseData.exercises.find(ex => ex.name === exerciseName);
-        isPicky = exercise?.isPicky === true;
+        isPicky = exercise?.role === 'challenger';
     }
 
     const progressSummary = await buildProgressSummary(courseId);

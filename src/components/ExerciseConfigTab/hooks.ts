@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import type { Exercise, ReasoningEffort, VerbosityLevel } from '../../types/shared';
-import { ExerciseConfigTabProps, ExerciseFlags } from './types';
+import type { AIRole, Exercise, ReasoningEffort, VerbosityLevel } from '../../types/shared';
+import { ExerciseConfigTabProps, ExerciseRoleConfig } from './types';
 import { buildConfigMap, computePendingChanges, configsAreEqual, getDefaultFlags } from './utils';
 
 export const useExerciseConfig = ({ exercises, pageId, courseId, onConfigUpdate, isActive }: ExerciseConfigTabProps) => {
-    const [exerciseConfig, setExerciseConfig] = useState<Map<string, ExerciseFlags>>(new Map());
-    const [originalConfig, setOriginalConfig] = useState<Map<string, ExerciseFlags>>(new Map());
+    const [exerciseConfig, setExerciseConfig] = useState<Map<string, ExerciseRoleConfig>>(new Map());
+    const [originalConfig, setOriginalConfig] = useState<Map<string, ExerciseRoleConfig>>(new Map());
     const [isSaving, setIsSaving] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -107,7 +107,7 @@ export const useExerciseConfig = ({ exercises, pageId, courseId, onConfigUpdate,
         setHasUnsavedChanges(false);
     };
 
-    const updateExerciseFlags = (exerciseName: string, updater: (flags: ExerciseFlags) => ExerciseFlags) => {
+    const updateExerciseFlags = (exerciseName: string, updater: (flags: ExerciseRoleConfig) => ExerciseRoleConfig) => {
         setExerciseConfig(prev => {
             const current = prev.get(exerciseName) ?? getDefaultFlags();
             const updated = updater(current);
@@ -117,12 +117,8 @@ export const useExerciseConfig = ({ exercises, pageId, courseId, onConfigUpdate,
         });
     };
 
-    const handleToggleChallenge = (exerciseName: string) => {
-        updateExerciseFlags(exerciseName, flags => ({ ...flags, allowed: !flags.allowed }));
-    };
-
-    const handleTogglePicky = (exerciseName: string) => {
-        updateExerciseFlags(exerciseName, flags => ({ ...flags, isPicky: !flags.isPicky }));
+    const handleRoleChange = (exerciseName: string, role: AIRole) => {
+        updateExerciseFlags(exerciseName, _flags => ({ role }));
     };
 
     const handleSaveChanges = async () => {
@@ -137,26 +133,15 @@ export const useExerciseConfig = ({ exercises, pageId, courseId, onConfigUpdate,
         try {
             // Save exercise config changes
             for (const change of changes) {
-                if (change.allowed !== undefined) {
-                    await chrome.runtime.sendMessage({
-                        action: "updateExerciseAllowed",
-                        pageId: pageId,
-                        exerciseName: change.name,
-                        allowed: change.allowed,
-                    });
-                }
-
-                if (change.isPicky !== undefined) {
-                    await chrome.runtime.sendMessage({
-                        action: "updateExercisePicky",
-                        pageId: pageId,
-                        exerciseName: change.name,
-                        isPicky: change.isPicky,
-                    });
-                }
+                await chrome.runtime.sendMessage({
+                    action: "updateExerciseRole",
+                    pageId: pageId,
+                    exerciseName: change.name,
+                    role: change.role,
+                });
             }
 
-            const challengeExercises = changes.filter(change => change.allowed === false).map(change => change.name);
+            const challengeExercises = changes.filter(change => change.role === 'challenger').map(change => change.name);
 
             if (challengeExercises.length > 0) {
                 await chrome.runtime.sendMessage({
@@ -219,8 +204,7 @@ export const useExerciseConfig = ({ exercises, pageId, courseId, onConfigUpdate,
         hasUnsavedChanges,
         successMessage,
         errorMessage,
-        handleToggleChallenge,
-        handleTogglePicky,
+        handleRoleChange,
         handleSaveChanges,
         editingExercise,
         setEditingExercise,

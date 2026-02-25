@@ -1,26 +1,26 @@
-import { Exercise, ExerciseFlags } from './types';
+import { Exercise, ExerciseRoleConfig } from './types';
+import type { AIRole } from '../../types/shared';
 
-export const getDefaultFlags = (): ExerciseFlags => ({ allowed: true, isPicky: false });
+export const getDefaultFlags = (): ExerciseRoleConfig => ({ role: 'tutor' });
 
-export const createFlagsFromExercise = (exercise: Exercise): ExerciseFlags => ({
-    allowed: exercise.allowed ?? true,
-    isPicky: exercise.isPicky ?? false,
+export const createFlagsFromExercise = (exercise: Exercise): ExerciseRoleConfig => ({
+    role: exercise.role ?? 'tutor',
 });
 
-export const buildConfigMap = (list: Exercise[]): Map<string, ExerciseFlags> => {
-    const config = new Map<string, ExerciseFlags>();
+export const buildConfigMap = (list: Exercise[]): Map<string, ExerciseRoleConfig> => {
+    const config = new Map<string, ExerciseRoleConfig>();
     for (const exercise of list) {
         config.set(exercise.name, createFlagsFromExercise(exercise));
     }
     return config;
 };
 
-export const configsAreEqual = (a: Map<string, ExerciseFlags>, b: Map<string, ExerciseFlags>): boolean => {
+export const configsAreEqual = (a: Map<string, ExerciseRoleConfig>, b: Map<string, ExerciseRoleConfig>): boolean => {
     if (a.size !== b.size) return false;
-    for (const [name, flags] of a) {
+    for (const [name, config] of a) {
         const reference = b.get(name);
         if (!reference) return false;
-        if (flags.allowed !== reference.allowed || flags.isPicky !== reference.isPicky) {
+        if (config.role !== reference.role) {
             return false;
         }
     }
@@ -28,23 +28,18 @@ export const configsAreEqual = (a: Map<string, ExerciseFlags>, b: Map<string, Ex
 };
 
 export const computePendingChanges = (
-    exerciseConfig: Map<string, ExerciseFlags>,
-    originalConfig: Map<string, ExerciseFlags>
-): Array<{ name: string; allowed?: boolean; isPicky?: boolean }> => {
-    const changes: Array<{ name: string; allowed?: boolean; isPicky?: boolean }> = [];
-    for (const [name, flags] of exerciseConfig.entries()) {
-        const originalFlags = originalConfig.get(name) ?? getDefaultFlags();
-        const change: { name: string; allowed?: boolean; isPicky?: boolean } = { name };
+    exerciseConfig: Map<string, ExerciseRoleConfig>,
+    originalConfig: Map<string, ExerciseRoleConfig>
+): Array<{ name: string; role: AIRole }> => {
+    const changes: Array<{ name: string; role: AIRole }> = [];
 
-        if (flags.allowed !== originalFlags.allowed) {
-            change.allowed = flags.allowed;
-        }
-        if (flags.isPicky !== originalFlags.isPicky) {
-            change.isPicky = flags.isPicky;
-        }
+    for (const [name, config] of exerciseConfig.entries()) {
+        const original = originalConfig.get(name) ?? getDefaultFlags();
+        const role = config.role;
+        const originalRole = original.role;
 
-        if (change.allowed !== undefined || change.isPicky !== undefined) {
-            changes.push(change);
+        if (role !== originalRole) {
+            changes.push({ name, role });
         }
     }
     return changes;

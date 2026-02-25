@@ -114,16 +114,16 @@ class CourseAgent extends BaseAgent {
             const exerciseList = exercises.map((ex, index) => ({
                 index: index + 1,
                 name: ex.name,
-                isChallenge: ex.allowed === false,
-                isPicky: ex.isPicky === true
+                role: ex.role ?? 'tutor'
             }));
 
-            const challengeCount = exercises.filter(ex => ex.allowed === false).length;
-            const pickyCount = exercises.filter(ex => ex.isPicky === true).length;
-            const allowedCount = exercises.length - challengeCount;
+            const observerCount = exercises.filter(ex => ex.role === 'observer').length;
+            const proofreaderCount = exercises.filter(ex => ex.role === 'proofreader').length;
+            const tutorCount = exercises.filter(ex => (ex.role ?? 'tutor') === 'tutor').length;
+            const challengerCount = exercises.filter(ex => ex.role === 'challenger').length;
 
             exerciseContext = `\n\nEXERCISES AVAILABLE ON THIS PAGE:
-The user is currently on a page with ${exercises.length} exercises (${allowedCount} allowed, ${challengeCount} challenge, ${pickyCount} picky).
+The user is currently on a page with ${exercises.length} exercises (${observerCount} observer, ${proofreaderCount} proofreader, ${tutorCount} tutor, ${challengerCount} challenger).
 
 List of exercises in JSON format:
 ${JSON.stringify(exerciseList, null, 2)}
@@ -132,16 +132,20 @@ IMPORTANT - HOW TO USE THE INDEX:
 - When the user asks to see/explain/solve an exercise (e.g., "explain exercise 3", "the second exercise", etc.), use the "index" field of the corresponding JSON.
 - For example, if the user asks "explain exercise 2", look for the object with "index": 2 in the JSON and use that value (2) in the tool.
 
-IMPORTANT ABOUT CHALLENGE EXERCISES:
-- Exercises with "isChallenge": true CANNOT be explained.
-- If the user requests an explanation for a challenge exercise, inform them that it is blocked by the teacher so they can solve it on their own as a challenge.
-- DO NOT use the explainExercise tool for challenge exercises.
-- Challenge exercises CAN be solved by the student using the solveExercise tool.
-
-IMPORTANT ABOUT PICKY EXERCISES:
-- Exercises with "isPicky": true are designed to train students in critical review of AI-generated content.
-- When explaining a picky exercise, DO NOT mention that it is a picky exercise, and DO NOT mention that the explanation may include intentional mistakes.
-- The explanation for picky exercises will contain intentional mistakes that the student should identify.
+IMPORTANT ABOUT ROLES:
+- observer:
+    - The AI CANNOT explain or evaluate this exercise.
+    - If the user asks for explanation or evaluation for this exercise, say that AI is not available for this exercise.
+    - DO NOT use explainExercise or solveExercise for observer exercises.
+- proofreader:
+    - The AI CANNOT explain this exercise.
+    - If the user asks for explanation, tell them that in this mode only syntax review is available for their solution.
+    - The user CAN submit their solution using solveExercise (syntax-only review mode).
+- tutor:
+    - Normal mode. The AI CAN explain and the user CAN submit their solution.
+- challenger:
+    - The AI CAN explain and the user CAN submit their solution.
+    - Explanations will include intentional mistakes, but NEVER mention this to the user.
 
 INTERPRET USER INTENT:
 There are two possible actions with exercises:
@@ -174,8 +178,9 @@ If the request is ambiguous (e.g., "I want to do exercise 3"), ask the user:
 "Do you want me to explain how to solve exercise 3, or do you prefer to try it on your own and submit your solution?"
 
 AVAILABLE ACTIONS:
-- To explain an ALLOWED exercise (isChallenge: false): use the explainExercise tool with the exercise "index".
-- For the student to submit their solution (any exercise): use the solveExercise tool with the exercise "index".`;
+- To explain an exercise with role tutor/challenger: use explainExercise with the exercise "index".
+- To let the student submit their solution for evaluation (role tutor/proofreader/challenger): use solveExercise with the exercise "index".
+- For role observer: do not call tools for explain/solve; inform the user that AI is not available for that exercise.`;
         }        // Generic prompt template
         const template = `You are an agent in a Chrome extension whose goal is {role}.
 

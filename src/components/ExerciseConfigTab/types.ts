@@ -1,9 +1,8 @@
 import type { Exercise } from "../../types/shared";
-export type { Exercise, ReasoningEffort, VerbosityLevel } from "../../types/shared";
+export type { AIRole, Exercise, ReasoningEffort, VerbosityLevel } from "../../types/shared";
 
-export interface ExerciseFlags {
-    allowed: boolean;
-    isPicky: boolean;
+export interface ExerciseRoleConfig {
+    role: import("../../types/shared").AIRole;
 }
 
 export interface ExerciseConfigTabProps {

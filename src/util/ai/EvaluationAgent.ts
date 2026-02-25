@@ -128,4 +128,65 @@ Provide a complete evaluation with score and detailed feedback.`;
             throw new Error('Unknown error evaluating solution');
         }
     }
+
+    /**
+     * Evaluates only the syntactic correctness of a student's solution.
+     * It does not assess whether the solution solves the exercise logically/semantically.
+     */
+    async evaluateSyntaxOnly(
+        exerciseName: string,
+        exerciseStatement: string,
+        studentSolution: string,
+        exerciseContext?: string
+    ): Promise<EvaluationSchemaType> {
+        console.log(`[evaluateSyntaxOnly] Evaluating syntax for: ${exerciseName}`);
+
+        const systemPrompt = `Eres un revisor de sintaxis. Tu ÚNICA tarea es identificar errores de sintaxis en la solución del alumno (paréntesis sin cerrar, comillas mal puestas, comas que faltan, palabras clave mal escritas, orden incorrecto de cláusulas).
+NO evalúes si la solución resuelve correctamente el enunciado.
+NO evalúes la lógica ni la semántica.
+Solo sintaxis.
+
+Devuelve SIEMPRE una evaluación estructurada con:
+- score: puntuación de 0 a 10 basada SOLO en corrección sintáctica.
+  - 10 si no hay errores de sintaxis.
+  - Menor que 10 según número/gravedad de errores sintácticos.
+- feedback: explicación clara de los errores sintácticos encontrados y cómo corregirlos.
+
+No incluyas valoración funcional del resultado ni comentarios sobre si cumple el objetivo del ejercicio.`;
+
+        const userPrompt = `Revisa SOLO la sintaxis de la siguiente solución propuesta por un alumno:
+
+**Ejercicio: ${exerciseName}**
+
+${exerciseStatement}
+
+${exerciseContext ? `**Contexto del ejercicio:**\n\`\`\`\n${exerciseContext}\n\`\`\`` : ''}
+
+**Solución del alumno:**
+\`\`\`
+${studentSolution}
+\`\`\`
+
+Evalúa exclusivamente la sintaxis y devuelve score + feedback.`;
+
+        try {
+            this.openAIService.resetConversation();
+
+            const response: any = await this.openAIService.generateStructuredResponse(
+                EvaluationSchema,
+                "evaluation",
+                userPrompt,
+                systemPrompt
+            );
+
+            console.log(`[evaluateSyntaxOnly] Syntax evaluation generated with score: ${response.score}/10`);
+            return response;
+        } catch (error) {
+            console.error(`[evaluateSyntaxOnly] Error:`, error);
+            if (error instanceof Error) {
+                throw new Error(`Error evaluating syntax: ${error.message}`);
+            }
+            throw new Error('Unknown error evaluating syntax');
+        }
+    }
 }
