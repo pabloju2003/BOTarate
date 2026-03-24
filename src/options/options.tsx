@@ -5,6 +5,7 @@ import { APP_CONFIG } from "../constants";
 import "../content/bootstrap.css";
 import { AVAILABLE_LANGUAGES, changeLanguage, type LanguageCode } from "../i18n";
 import { AgentConfig } from "../util/ai/AgentConfig";
+import { getCanonicalModelName, modelBelongsToCatalogModel } from "../util/ai/ModelList";
 import { OpenAIService } from "../util/ai/OpenAIService";
 import { ConfigManager } from "../util/config/ConfigManager";
 import { AppMode, ModeManager } from "../util/config/ModeManager";
@@ -18,6 +19,36 @@ interface CourseInfo {
 
 type TabType = "llm" | "agents" | "import-export";
 type AgentSection = "general" | "exercise" | "evaluation" | "explanation";
+
+const getCompatibleProviderModels = (availableModels: string[], catalogModels: string[]): string[] => {
+    return availableModels.filter(model =>
+        catalogModels.some(catalogModel => modelBelongsToCatalogModel(model, catalogModel)),
+    );
+};
+
+const resolvePreselectedProviderModel = (
+    availableModels: string[],
+    catalogModels: string[],
+    preselectedModel?: string,
+): string => {
+    const compatibleModels = getCompatibleProviderModels(availableModels, catalogModels);
+    if (compatibleModels.length === 0) {
+        return "";
+    }
+
+    const cleanPreselectedModel = preselectedModel?.replace("models/", "").trim() || "";
+    if (!cleanPreselectedModel) {
+        return compatibleModels[0];
+    }
+
+    if (compatibleModels.includes(cleanPreselectedModel)) {
+        return cleanPreselectedModel;
+    }
+
+    const canonicalPreselected = getCanonicalModelName(cleanPreselectedModel);
+    const mappedProviderModel = compatibleModels.find(model => getCanonicalModelName(model) === canonicalPreselected);
+    return mappedProviderModel || compatibleModels[0];
+};
 
 // Componentes reutilizables para campos de configuración
 interface ConfigFieldProps {
@@ -123,21 +154,19 @@ const Options: React.FC = () => {
             setModelList(cleanList);
 
             // Select text model
-            const cleanModelToPreselect = modelToPreselect?.replace("models/", "") || "";
-            const textModels = cleanList.filter(m => ConfigManager.TEXT_MODELS.includes(m));
-            const modelToSelect =
-                cleanModelToPreselect && textModels.includes(cleanModelToPreselect)
-                    ? cleanModelToPreselect
-                    : textModels[0] || "";
+            const modelToSelect = resolvePreselectedProviderModel(
+                cleanList,
+                ConfigManager.TEXT_MODELS,
+                modelToPreselect,
+            );
             setSelectedModel(modelToSelect);
 
             // Select vision model
-            const cleanVisionModelToPreselect = visionModelToPreselect?.replace("models/", "") || "";
-            const visionModels = cleanList.filter(m => ConfigManager.VISION_MODELS.includes(m));
-            const visionModelToSelect =
-                cleanVisionModelToPreselect && visionModels.includes(cleanVisionModelToPreselect)
-                    ? cleanVisionModelToPreselect
-                    : visionModels[0] || "";
+            const visionModelToSelect = resolvePreselectedProviderModel(
+                cleanList,
+                ConfigManager.VISION_MODELS,
+                visionModelToPreselect,
+            );
             setSelectedVisionModel(visionModelToSelect);
 
             setModelListEnabled(true);
@@ -295,8 +324,8 @@ const Options: React.FC = () => {
             }
 
             // Get available models from current provider
-            const availableTextModels = modelList.filter(m => ConfigManager.TEXT_MODELS.includes(m));
-            const availableVisionModels = modelList.filter(m => ConfigManager.VISION_MODELS.includes(m));
+            const availableTextModels = getCompatibleProviderModels(modelList, ConfigManager.TEXT_MODELS);
+            const availableVisionModels = getCompatibleProviderModels(modelList, ConfigManager.VISION_MODELS);
 
             // Use first available model if none selected
             const modelToSave = selectedModel || availableTextModels[0] || "";
@@ -718,44 +747,58 @@ const Options: React.FC = () => {
                                         <label htmlFor="modelSelect" className="form-label">
                                             {t("options.llm.textModel")}
                                         </label>
-                                        <select
-                                            className={`form-select${
-                                                !modelListEnabled && apiKeyError ? " is-invalid" : ""
-                                            }`}
-                                            id="modelSelect"
-                                            disabled={!modelListEnabled}
-                                            value={selectedModel}
-                                            onChange={e => setSelectedModel(e.target.value)}
-                                        >
-                                            {ConfigManager.TEXT_MODELS.filter(m => modelList.includes(m)).map(model => (
-                                                <option key={model} value={model}>
-                                                    {model}
-                                                </option>
-                                            ))}
-                                        </select>
+                                        {(() => {
+                                            const textModelOptions = getCompatibleProviderModels(
+                                                modelList,
+                                                ConfigManager.TEXT_MODELS,
+                                            );
+                                            return (
+                                                <select
+                                                    className={`form-select${
+                                                        !modelListEnabled && apiKeyError ? " is-invalid" : ""
+                                                    }`}
+                                                    id="modelSelect"
+                                                    disabled={!modelListEnabled}
+                                                    value={selectedModel}
+                                                    onChange={e => setSelectedModel(e.target.value)}
+                                                >
+                                                    {textModelOptions.map(model => (
+                                                        <option key={model} value={model}>
+                                                            {model}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            );
+                                        })()}
                                         <div className="form-text">{t("options.llm.textModelHelp")}</div>
                                     </div>
                                     <div className="col-md-6">
                                         <label htmlFor="visionModelSelect" className="form-label">
                                             {t("options.llm.visionModel")}
                                         </label>
-                                        <select
-                                            className={`form-select${
-                                                !modelListEnabled && apiKeyError ? " is-invalid" : ""
-                                            }`}
-                                            id="visionModelSelect"
-                                            disabled={!modelListEnabled}
-                                            value={selectedVisionModel}
-                                            onChange={e => setSelectedVisionModel(e.target.value)}
-                                        >
-                                            {ConfigManager.VISION_MODELS.filter(m => modelList.includes(m)).map(
-                                                model => (
-                                                    <option key={model} value={model}>
-                                                        {model}
-                                                    </option>
-                                                ),
-                                            )}
-                                        </select>
+                                        {(() => {
+                                            const visionModelOptions = getCompatibleProviderModels(
+                                                modelList,
+                                                ConfigManager.VISION_MODELS,
+                                            );
+                                            return (
+                                                <select
+                                                    className={`form-select${
+                                                        !modelListEnabled && apiKeyError ? " is-invalid" : ""
+                                                    }`}
+                                                    id="visionModelSelect"
+                                                    disabled={!modelListEnabled}
+                                                    value={selectedVisionModel}
+                                                    onChange={e => setSelectedVisionModel(e.target.value)}
+                                                >
+                                                    {visionModelOptions.map(model => (
+                                                        <option key={model} value={model}>
+                                                            {model}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            );
+                                        })()}
                                         <div className="form-text">{t("options.llm.visionModelHelp")}</div>
                                         {!modelListEnabled && apiKey.trim() && apiKeyError && (
                                             <div className="invalid-feedback">{t("options.llm.apiKeyError")}</div>

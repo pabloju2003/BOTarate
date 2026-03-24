@@ -1,27 +1,30 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LabContextData } from "./types";
 
+const EMPTY_CONTEXT_DATA: LabContextData = {
+    learningObjectives: "",
+    exerciseContext: "",
+    concepts: [],
+};
+
 export const useLabContextModal = (isOpen: boolean, labId: string, onContextUpdate?: () => void) => {
-    const [data, setData] = useState<LabContextData>({
-        learningObjectives: "",
-        exerciseContext: "",
-        concepts: [],
-    });
-    const [originalData, setOriginalData] = useState<LabContextData>({
-        learningObjectives: "",
-        exerciseContext: "",
-        concepts: [],
-    });
+    const [data, setData] = useState<LabContextData>(EMPTY_CONTEXT_DATA);
+    const [originalData, setOriginalData] = useState<LabContextData>(EMPTY_CONTEXT_DATA);
     const [activeTab, setActiveTab] = useState<string>("learningObjectives");
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
     const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
     const [newConcept, setNewConcept] = useState("");
+    const loadRequestIdRef = useRef(0);
 
     useEffect(() => {
         if (isOpen && labId) {
-            loadData();
+            const requestId = ++loadRequestIdRef.current;
+            setData(EMPTY_CONTEXT_DATA);
+            setOriginalData(EMPTY_CONTEXT_DATA);
+            setHasChanges(false);
+            loadData(labId, requestId);
             setActiveTab("learningObjectives");
             setSaveMessage(null);
             setNewConcept("");
@@ -43,13 +46,16 @@ export const useLabContextModal = (isOpen: boolean, labId: string, onContextUpda
         }
     }, [saveMessage]);
 
-    const loadData = async () => {
+    const loadData = async (targetLabId: string, requestId: number) => {
         setIsLoading(true);
         try {
             const response = await chrome.runtime.sendMessage({
                 action: "getExerciseData",
-                pageId: labId,
+                pageId: targetLabId,
             });
+            if (requestId !== loadRequestIdRef.current) {
+                return;
+            }
             if (response.success && response.data) {
                 const loaded: LabContextData = {
                     learningObjectives: response.data.learningObjectives || "",
@@ -65,7 +71,9 @@ export const useLabContextModal = (isOpen: boolean, labId: string, onContextUpda
         } catch (error) {
             console.error("Error loading lab context:", error);
         } finally {
-            setIsLoading(false);
+            if (requestId === loadRequestIdRef.current) {
+                setIsLoading(false);
+            }
         }
     };
 

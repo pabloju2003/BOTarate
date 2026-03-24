@@ -89,7 +89,7 @@ const LabContextModal: React.FC<LabContextModalProps> = ({ isOpen, onClose, labI
                                 )}
                                 <div className="d-flex flex-column gap-2 mb-3">
                                     {data.concepts.map((concept, index) => (
-                                        <div key={`concept-${index}-${concept.slice(0, 10)}`} className="input-group">
+                                        <div key={`concept-${index}`} className="input-group">
                                             <input
                                                 type="text"
                                                 className="form-control form-control-sm"

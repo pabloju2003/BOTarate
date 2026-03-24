@@ -1,5 +1,22 @@
 import { ContextGenerationStatus, LabContextState, PendingChanges } from "./types";
 
+async function hasGeneratedContext(labId: string): Promise<boolean> {
+    try {
+        const response = await chrome.runtime.sendMessage({
+            action: "getExerciseData",
+            pageId: labId,
+        });
+
+        if (!response?.success || !response?.data) {
+            return false;
+        }
+
+        return Array.isArray(response.data.exercises) && response.data.exercises.length > 0;
+    } catch {
+        return false;
+    }
+}
+
 export const handleSaveChanges = async (
     hasUnsavedChanges: boolean,
     hasContextChanges: boolean,
@@ -53,7 +70,10 @@ export const handleSaveChanges = async (
                         courseId: courseId,
                     });
 
-                    if (response.success) {
+                    const hasExercises = Array.isArray(response?.exercises) && response.exercises.length > 0;
+                    const generationSucceeded = response?.success === true && hasExercises;
+
+                    if (generationSucceeded) {
                         setContextGenerationStatus(prev => {
                             const newStatus = new Map(prev);
                             newStatus.set(labId, "completed");
@@ -73,14 +93,60 @@ export const handleSaveChanges = async (
                         });
                         return { labId, success: true };
                     } else {
+                        // If transport succeeded but payload is empty/invalid, verify persisted state once.
+                        const persisted = await hasGeneratedContext(labId);
+                        if (persisted) {
+                            setContextGenerationStatus(prev => {
+                                const newStatus = new Map(prev);
+                                newStatus.set(labId, "completed");
+                                return newStatus;
+                            });
+                            setLabContextState(prev => {
+                                const newState = new Map(prev);
+                                const current = newState.get(labId);
+                                if (current) {
+                                    newState.set(labId, {
+                                        ...current,
+                                        hasContext: true,
+                                        originalGenerateContext: true,
+                                    });
+                                }
+                                return newState;
+                            });
+                            return { labId, success: true };
+                        }
+
                         setContextGenerationStatus(prev => {
                             const newStatus = new Map(prev);
                             newStatus.set(labId, "error");
                             return newStatus;
                         });
-                        return { labId, success: false, error: response.error };
+                        return { labId, success: false, error: response?.error || "No exercises detected" };
                     }
                 } catch (error) {
+                    // In some cases the message channel fails but background has already persisted data.
+                    const persisted = await hasGeneratedContext(labId);
+                    if (persisted) {
+                        setContextGenerationStatus(prev => {
+                            const newStatus = new Map(prev);
+                            newStatus.set(labId, "completed");
+                            return newStatus;
+                        });
+                        setLabContextState(prev => {
+                            const newState = new Map(prev);
+                            const current = newState.get(labId);
+                            if (current) {
+                                newState.set(labId, {
+                                    ...current,
+                                    hasContext: true,
+                                    originalGenerateContext: true,
+                                });
+                            }
+                            return newState;
+                        });
+                        return { labId, success: true };
+                    }
+
                     setContextGenerationStatus(prev => {
                         const newStatus = new Map(prev);
                         newStatus.set(labId, "error");
@@ -91,15 +157,25 @@ export const handleSaveChanges = async (
             });
 
             // Wait for all to complete
-            await Promise.all(generationPromises);
+            const generationResults = await Promise.all(generationPromises);
+            const failedLabs = generationResults.filter(result => !result.success).map(result => result.labId);
+
+            if (failedLabs.length > 0 && onError) {
+                onError(`No se pudo generar el contexto para ${failedLabs.length} laboratorio(s).`);
+            }
         }
 
         // Remove context for labs that were unchecked
         for (const labId of labsToRemove) {
-            await chrome.runtime.sendMessage({
+            const removeResponse = await chrome.runtime.sendMessage({
                 action: "removeExerciseData",
                 pageId: labId,
             });
+
+            if (!removeResponse?.success) {
+                throw new Error(removeResponse?.error || "No se pudo eliminar el contexto del laboratorio");
+            }
+
             setLabContextState(prev => {
                 const newState = new Map(prev);
                 const current = newState.get(labId);
@@ -117,20 +193,28 @@ export const handleSaveChanges = async (
         // Save other configuration changes
         for (const [labId, changes] of pendingChanges) {
             if (changes.verbosity !== undefined) {
-                await chrome.runtime.sendMessage({
+                const verbosityResponse = await chrome.runtime.sendMessage({
                     action: "updateLabVerbosity",
                     courseId: courseId,
                     labId: labId,
                     verbosity: changes.verbosity,
                 });
+
+                if (!verbosityResponse?.success) {
+                    throw new Error(verbosityResponse?.error || "No se pudo actualizar la verbosidad");
+                }
             }
             if (changes.reasoningEffort !== undefined) {
-                await chrome.runtime.sendMessage({
+                const reasoningResponse = await chrome.runtime.sendMessage({
                     action: "updateLabReasoningEffort",
                     courseId: courseId,
                     labId: labId,
                     reasoningEffort: changes.reasoningEffort,
                 });
+
+                if (!reasoningResponse?.success) {
+                    throw new Error(reasoningResponse?.error || "No se pudo actualizar el razonamiento");
+                }
             }
         }
 
@@ -148,7 +232,9 @@ export const handleSaveChanges = async (
             setContextGenerationStatus(prev => {
                 const newStatus = new Map(prev);
                 for (const [labId] of newStatus) {
-                    newStatus.set(labId, "idle");
+                    if (newStatus.get(labId) === "completed") {
+                        newStatus.set(labId, "idle");
+                    }
                 }
                 return newStatus;
             });

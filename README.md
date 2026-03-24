@@ -38,7 +38,7 @@ To create a new configuration for your students:
 
 1.  Right-click the extension icon and select "Options".
 2.  In the "LLM Configuration" tab:
-    - Select the **Provider** (OpenAI, Google).
+    - Select the **Provider** (OpenAI, Anthropic/Claude, Google, Groq, OpenRouter).
     - Enter your **API Key**.
     - Select the desired **Model** from the list.
     - Click "Save configuration".

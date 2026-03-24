@@ -1,6 +1,23 @@
 import { LabConfigTabStateStorageManager } from "../../util/storage/LabConfigTabStateStorageManager";
 import { ContextGenerationStatus, LabConfig, LabContextState, PendingChanges, ReasoningEffort, VerbosityLevel } from "./types";
 
+async function hasGeneratedContext(labId: string): Promise<boolean> {
+    try {
+        const response = await chrome.runtime.sendMessage({
+            action: "getExerciseData",
+            pageId: labId,
+        });
+
+        if (!response?.success || !response?.data) {
+            return false;
+        }
+
+        return Array.isArray(response.data.exercises) && response.data.exercises.length > 0;
+    } catch {
+        return false;
+    }
+}
+
 export const createHandlers = (
     labConfig: Map<string, LabConfig>,
     setLabConfig: React.Dispatch<React.SetStateAction<Map<string, LabConfig>>>,
@@ -108,7 +125,10 @@ export const createHandlers = (
                 courseId: courseId,
             });
 
-            if (response.success) {
+            const hasExercises = Array.isArray(response?.exercises) && response.exercises.length > 0;
+            const generationSucceeded = response?.success === true && hasExercises;
+
+            if (generationSucceeded) {
                 setContextGenerationStatus(prev => {
                     const newStatus = new Map(prev);
                     newStatus.set(labId, "completed");
@@ -131,6 +151,31 @@ export const createHandlers = (
                     onConfigUpdate();
                 }
             } else {
+                const persisted = await hasGeneratedContext(labId);
+                if (persisted) {
+                    setContextGenerationStatus(prev => {
+                        const newStatus = new Map(prev);
+                        newStatus.set(labId, "completed");
+                        return newStatus;
+                    });
+                    setLabContextState(prev => {
+                        const newState = new Map(prev);
+                        const current = newState.get(labId);
+                        if (current) {
+                            newState.set(labId, {
+                                ...current,
+                                hasContext: true,
+                                originalGenerateContext: true,
+                            });
+                        }
+                        return newState;
+                    });
+                    if (onConfigUpdate) {
+                        onConfigUpdate();
+                    }
+                    return;
+                }
+
                 setContextGenerationStatus(prev => {
                     const newStatus = new Map(prev);
                     newStatus.set(labId, "error");
@@ -138,6 +183,31 @@ export const createHandlers = (
                 });
             }
         } catch {
+            const persisted = await hasGeneratedContext(labId);
+            if (persisted) {
+                setContextGenerationStatus(prev => {
+                    const newStatus = new Map(prev);
+                    newStatus.set(labId, "completed");
+                    return newStatus;
+                });
+                setLabContextState(prev => {
+                    const newState = new Map(prev);
+                    const current = newState.get(labId);
+                    if (current) {
+                        newState.set(labId, {
+                            ...current,
+                            hasContext: true,
+                            originalGenerateContext: true,
+                        });
+                    }
+                    return newState;
+                });
+                if (onConfigUpdate) {
+                    onConfigUpdate();
+                }
+                return;
+            }
+
             setContextGenerationStatus(prev => {
                 const newStatus = new Map(prev);
                 newStatus.set(labId, "error");
@@ -150,7 +220,7 @@ export const createHandlers = (
             setContextGenerationStatus(prev => {
                 const newStatus = new Map(prev);
                 const currentStatus = newStatus.get(labId);
-                if (currentStatus === "completed" || currentStatus === "error") {
+                if (currentStatus === "completed") {
                     newStatus.set(labId, "idle");
                 }
                 return newStatus;

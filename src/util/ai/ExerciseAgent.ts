@@ -132,7 +132,7 @@ ${pageContent}`;
             let exerciseResult: ExerciseListSchemaType | null = null;
 
             // The toolExecutor captures when postExercises is called
-            const result = await this.openAIService.processResponseWithTools(
+            await this.openAIService.processResponseWithTools(
                 async (name: string, args: any) => {
                     if (name === 'postExercises') {
                         // Capture identified exercises
@@ -144,7 +144,9 @@ ${pageContent}`;
                 },
                 userPrompt,
                 systemPrompt,
-                this.allowedTools.map(tool => EXERCISE_AGENT_TOOLS.find((t: any) => t.function.name === tool)).filter(Boolean)
+                this.allowedTools.map(tool => EXERCISE_AGENT_TOOLS.find((t: any) => t.function.name === tool)).filter(Boolean),
+                undefined,
+                ['postExercises']
             );
 
             // Verify that a valid response was received

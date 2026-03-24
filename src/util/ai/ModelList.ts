@@ -30,29 +30,22 @@ export const MODEL_LIST: ModelConfig[] = [
         supportsReasoning: false
     },
     {
-        name: "openai/gpt-oss-120b",
+        name: "gpt-oss-120b",
         supportsText: true,
         supportsVision: false,
         supportsVerbosity: false,
         supportsReasoning: false
     },
     {
-        name: "openai/gpt-oss-20b",
+        name: "gpt-oss-20b",
         supportsText: true,
         supportsVision: false,
         supportsVerbosity: false,
         supportsReasoning: false
     },
     {
-        name: "meta-llama/llama-4-scout-17b-16e-instruct",
+        name: "llama-4-scout-17b-16e-instruct",
         supportsText: false,
-        supportsVision: true,
-        supportsVerbosity: false,
-        supportsReasoning: false
-    },
-    {
-        name: "google/gemini-3-flash-preview",
-        supportsText: true,
         supportsVision: true,
         supportsVerbosity: false,
         supportsReasoning: false
@@ -72,14 +65,14 @@ export const MODEL_LIST: ModelConfig[] = [
         supportsReasoning: false
     },
     {
-        name: "openai/gpt-5-mini",
+        name: "moonshotai/kimi-k2.5",
         supportsText: true,
-        supportsVision: true,
+        supportsVision: false,
         supportsVerbosity: false,
         supportsReasoning: false
     },
     {
-        name: "moonshotai/kimi-k2.5",
+        name: "claude-haiku-4.5",
         supportsText: true,
         supportsVision: false,
         supportsVerbosity: false,
@@ -87,13 +80,49 @@ export const MODEL_LIST: ModelConfig[] = [
     }
 ];
 
+function normalizeModelName(modelName: string): string {
+    return modelName.replace("models/", "").trim();
+}
+
+/**
+ * Resolves a provider model id to the canonical model name used in MODEL_LIST.
+ * Examples:
+ * - anthropic/claude-haiku-4.5 -> claude-haiku-4.5
+ * - openai/gpt-5-mini -> gpt-5-mini
+ */
+export function getCanonicalModelName(modelName: string): string {
+    const normalized = normalizeModelName(modelName);
+
+    // Exact match in our canonical catalog
+    if (MODEL_LIST.some(m => m.name === normalized)) {
+        return normalized;
+    }
+
+    // Match provider-prefixed variants (including nested prefixes)
+    const suffixMatches = MODEL_LIST.filter(m => normalized.endsWith(`/${m.name}`));
+    if (suffixMatches.length > 0) {
+        // Prefer the most specific catalog name when multiple suffixes match
+        return suffixMatches.sort((a, b) => b.name.length - a.name.length)[0].name;
+    }
+
+    return normalized;
+}
+
+/**
+ * Checks whether a provider-specific model id belongs to a canonical catalog model.
+ */
+export function modelBelongsToCatalogModel(modelName: string, catalogModelName: string): boolean {
+    return getCanonicalModelName(modelName) === catalogModelName;
+}
+
 /**
  * Gets model configuration by name
  * @param modelName Model name
  * @returns Model configuration or undefined if not in the list
  */
 export function getModelConfig(modelName: string): ModelConfig | undefined {
-    return MODEL_LIST.find(m => modelName == m.name);
+    const canonicalName = getCanonicalModelName(modelName);
+    return MODEL_LIST.find(m => canonicalName === m.name);
 }
 
 /**

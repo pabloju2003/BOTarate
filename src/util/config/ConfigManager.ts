@@ -18,6 +18,7 @@ export class ConfigManager {
 
     private static readonly providers: AIProvider[] = [
         { name: "OpenAI", baseUrl: "https://api.openai.com/v1/", key: import.meta.env.VITE_OPENAI_API_KEY || "" },
+        { name: "Anthropic", baseUrl: "https://api.anthropic.com/v1/", key: import.meta.env.VITE_ANTHROPIC_API_KEY || "" },
         { name: "Google", baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/", key: import.meta.env.VITE_GOOGLE_API_KEY || "" },
         { name: "Groq", baseUrl: "https://api.groq.com/openai/v1/", key: import.meta.env.VITE_GROQ_API_KEY || "" },
         { name: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1/", key: import.meta.env.VITE_OPENROUTER_API_KEY || "" }

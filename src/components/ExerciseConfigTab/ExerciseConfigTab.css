@@ -1,0 +1,12 @@
+.exercise-switch-wrapper {
+    justify-content: center;
+    padding-left: 0;
+    min-height: 1rem;
+}
+
+.exercise-switch-input {
+    float: none;
+    margin: 0;
+    position: static;
+    transform: none;
+}
