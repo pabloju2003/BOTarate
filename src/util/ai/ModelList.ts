@@ -58,6 +58,20 @@ export const MODEL_LIST: ModelConfig[] = [
         supportsReasoning: false
     },
     {
+        name: "gemini-3-flash-preview",
+        supportsText: true,
+        supportsVision: true,
+        supportsVerbosity: false,
+        supportsReasoning: false
+    },
+    {
+        name: "gemini-2.5-flash",
+        supportsText: true,
+        supportsVision: true,
+        supportsVerbosity: false,
+        supportsReasoning: false
+    },
+    {
         name: "openai/gpt-5-mini",
         supportsText: true,
         supportsVision: true,

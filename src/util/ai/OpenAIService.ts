@@ -10,6 +10,7 @@ import { TOOLS } from "./Tools";
 export interface ResponseOptions {
     verbosity?: VerbosityLevel;
     reasoningEffort?: ReasoningEffort;
+    maxTokens?: number;
 }
 
 export interface Message {
@@ -147,7 +148,7 @@ class OpenAIService {
 
         const response = await OpenAIService.openai.chat.completions.create({
             model: ConfigManager.getSelectedModel(),
-            messages: this.conversationHistory,
+            messages: this.conversationHistory as any,
             tools: tools ?? TOOLS,
             tool_choice: 'auto',
         });
@@ -265,7 +266,7 @@ class OpenAIService {
         // Build API parameters
         const apiParams: any = {
             model: modelName,
-            messages: this.conversationHistory,
+            messages: this.conversationHistory as any,
             response_format: responseFormat,
         };
 
@@ -284,6 +285,10 @@ class OpenAIService {
             if (options.reasoningEffort && modelSupportsReasoning) {
                 apiParams.reasoning = { effort: options.reasoningEffort };
                 console.log(`[generateStructuredResponse] Added reasoning effort: ${options.reasoningEffort}`);
+            }
+
+            if (options?.maxTokens) {
+                apiParams.max_tokens = options.maxTokens;
             }
         }
 

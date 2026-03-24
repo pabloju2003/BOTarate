@@ -72,7 +72,9 @@ PEDAGOGICAL CONTEXT:
 {teacherPersonalization}
 
 IMPORTANT:
-{importantNotes}`;
+{importantNotes}
+
+{responseLengthConstraints}`;
 
         const systemPromptVariables = {
             role: agentConfig.role,
@@ -85,7 +87,13 @@ IMPORTANT:
             objectivesContext: objectivesContext,
             considerObjectives: considerObjectives,
             teacherPersonalization: this.buildTeacherPersonalization(),
-            importantNotes: agentConfig.importantNotes || ''
+            importantNotes: agentConfig.importantNotes || '',
+            responseLengthConstraints: `RESPONSE LENGTH CONSTRAINTS:
+- Keep feedback to 3-4 sentences per error found.
+- Do NOT repeat the student's solution back to them — they can see it.
+- Do NOT add encouraging filler — go straight to the evaluation.
+- If the solution is correct, say so briefly (1-2 sentences) with the score.
+- Focus on the most important errors first.`
         };
 
         const systemPrompt = this.buildPromptFromTemplate(systemPromptTemplate, systemPromptVariables);
@@ -114,7 +122,9 @@ Provide a complete evaluation with score and detailed feedback.`;
                 EvaluationSchema,
                 "evaluation",
                 userPrompt,
-                systemPrompt
+                systemPrompt,
+                undefined,
+                { maxTokens: 1000 }
             );
 
             console.log(`[evaluateSolution] Evaluation generated with score: ${response.score}/10`);
@@ -152,7 +162,13 @@ Devuelve SIEMPRE una evaluación estructurada con:
   - Menor que 10 según número/gravedad de errores sintácticos.
 - feedback: explicación clara de los errores sintácticos encontrados y cómo corregirlos.
 
-No incluyas valoración funcional del resultado ni comentarios sobre si cumple el objetivo del ejercicio.`;
+No incluyas valoración funcional del resultado ni comentarios sobre si cumple el objetivo del ejercicio.
+
+RESTRICCIONES DE LONGITUD:
+- Máximo 2-3 frases por error sintáctico encontrado.
+- NO repitas el código del alumno — solo identifica el error y cómo corregirlo.
+- Si no hay errores de sintaxis, dilo en una frase con puntuación 10.
+- Sé directo y técnico — sin frases de ánimo ni relleno.`;
 
         const userPrompt = `Revisa SOLO la sintaxis de la siguiente solución propuesta por un alumno:
 
@@ -176,7 +192,9 @@ Evalúa exclusivamente la sintaxis y devuelve score + feedback.`;
                 EvaluationSchema,
                 "evaluation",
                 userPrompt,
-                systemPrompt
+                systemPrompt,
+                undefined,
+                { maxTokens: 1000 }
             );
 
             console.log(`[evaluateSyntaxOnly] Syntax evaluation generated with score: ${response.score}/10`);

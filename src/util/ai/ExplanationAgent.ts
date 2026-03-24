@@ -105,6 +105,8 @@ PEDAGOGICAL CONTEXT:
 
 {importantNotes}
 
+{responseLengthConstraints}
+
 {pickyInstructions}`;
 
         const systemPromptVariables = {
@@ -119,6 +121,14 @@ PEDAGOGICAL CONTEXT:
             ...pedagogicalContext,
             teacherPersonalization: this.buildTeacherPersonalization(),
             importantNotes: agentConfig.importantNotes || '',
+            responseLengthConstraints: `RESPONSE LENGTH CONSTRAINTS:
+- Keep each refinement step to 2-4 sentences of explanation maximum.
+- For simple exercises (1-2 subproblems), use 3-4 total steps maximum.
+- For medium exercises, use no more than 6-8 total steps.
+- Do NOT repeat the exercise statement in your explanation — the student already sees it.
+- Do NOT add filler phrases like "¡Vamos a verlo!", "¡Excelente pregunta!", "¡Empecemos!" or similar.
+- Go straight to the content. Be precise, not verbose.
+- Each step should add real value — if a step only restates what the previous step said, merge them.`,
             pickyInstructions: pickyInstructions
         };
 
@@ -217,6 +227,9 @@ Since you can ONLY answer questions about THIS SPECIFIC EXERCISE (not other exer
 
         const systemPrompt = this.buildExplanationSystemPrompt(exerciseContext, concepts, learningObjectives, progressSummary, pageId, isPicky);
         const userPrompt = this.buildExplanationUserPrompt(exerciseName, exerciseStatement, exerciseContext);
+        const finalOptions: ResponseOptions = {
+            ...responseOptions,
+        };
 
         try {
             // Reset history for this specific call
@@ -229,7 +242,7 @@ Since you can ONLY answer questions about THIS SPECIFIC EXERCISE (not other exer
                 userPrompt,
                 systemPrompt,
                 undefined,
-                responseOptions
+                finalOptions
             );
 
             console.log(`[generateExplanation] Explanation generated with ${response.steps.length} steps`);
