@@ -121,26 +121,34 @@ const EvaluationListModal: React.FC<EvaluationListModalProps> = ({ exerciseName,
                                         </div>
                                     </div>
 
-                                    <h6>{t("evaluation.list.yourSolution")}:</h6>
-                                    <pre
-                                        className="bg-light p-3 rounded"
-                                        style={{
-                                            height: "20vh",
-                                            overflowY: "auto",
-                                            fontSize: "0.9rem",
-                                        }}
-                                    >
-                                        <code>{selectedEvaluation.solution}</code>
-                                    </pre>
+                                    <div className="d-flex gap-3 flex-fill" style={{ minHeight: 0 }}>
+                                        {/* Columna izquierda - Solución del alumno */}
+                                        <div className="d-flex flex-column" style={{ flex: 1, minWidth: 0 }}>
+                                            <h6>{t("evaluation.list.yourSolution")}:</h6>
+                                            <pre
+                                                className="bg-light p-3 rounded flex-fill"
+                                                style={{
+                                                    overflowY: "auto",
+                                                    fontSize: "0.9rem",
+                                                    minHeight: 0,
+                                                }}
+                                            >
+                                                <code>{selectedEvaluation.solution}</code>
+                                            </pre>
+                                        </div>
 
-                                    <h6 className="mt-1">{t("evaluation.list.evaluatorFeedback")}:</h6>
-                                    <div
-                                        className="border rounded p-3 flex-fill"
-                                        style={{ height: "75vh", overflowY: "auto" }}
-                                    >
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                            {selectedEvaluation.feedback}
-                                        </ReactMarkdown>
+                                        {/* Columna derecha - Feedback del evaluador */}
+                                        <div className="d-flex flex-column" style={{ flex: 1, minWidth: 0 }}>
+                                            <h6>{t("evaluation.list.evaluatorFeedback")}:</h6>
+                                            <div
+                                                className="border rounded p-3 flex-fill"
+                                                style={{ overflowY: "auto", minHeight: 0 }}
+                                            >
+                                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                    {selectedEvaluation.feedback}
+                                                </ReactMarkdown>
+                                            </div>
+                                        </div>
                                     </div>
                                 </>
                             ) : (
