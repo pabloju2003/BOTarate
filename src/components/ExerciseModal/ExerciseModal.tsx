@@ -7,6 +7,61 @@ import { useExerciseModal } from "./hooks";
 import { ExerciseModalProps } from "./types";
 import { handleKeyDown } from "./utils";
 
+const CodeBlock: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+    const [copied, setCopied] = React.useState(false);
+
+    const handleCopy = () => {
+        // Extract text content from children
+        const text = extractTextFromChildren(children);
+        navigator.clipboard.writeText(text).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
+    };
+
+    return (
+        <div style={{ position: "relative" }}>
+            <pre className="bg-light p-3 rounded overflow-auto" style={{ paddingRight: "3rem" }}>
+                {children}
+            </pre>
+            <button
+                onClick={handleCopy}
+                className="btn btn-sm"
+                style={{
+                    position: "absolute",
+                    top: "8px",
+                    right: "8px",
+                    padding: "2px 8px",
+                    fontSize: "0.75rem",
+                    backgroundColor: copied ? "#198754" : "#6c757d",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    opacity: 0.8,
+                    transition: "background-color 0.2s",
+                }}
+                title={copied ? "¡Copiado!" : "Copiar código"}
+            >
+                {copied ? "✓" : "📋"}
+            </button>
+        </div>
+    );
+};
+
+// Helper function to extract text from React children
+function extractTextFromChildren(children: React.ReactNode): string {
+    if (typeof children === "string") return children;
+    if (Array.isArray(children)) return children.map(extractTextFromChildren).join("");
+    if (React.isValidElement(children)) {
+        const childProps = children.props as Record<string, unknown>;
+        if (childProps.children) {
+            return extractTextFromChildren(childProps.children as React.ReactNode);
+        }
+    }
+    return String(children ?? "");
+}
+
 const ExerciseModal: React.FC<ExerciseModalProps> = ({
     exercise,
     isOpen,
@@ -108,8 +163,8 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({
                                                         <code className="d-block bg-light p-2 rounded" {...props} />
                                                     );
                                                 },
-                                                pre: ({ node, ...props }) => (
-                                                    <pre className="bg-light p-3 rounded overflow-auto" {...props} />
+                                                pre: ({ node, children, ...props }) => (
+                                                    <CodeBlock>{children}</CodeBlock>
                                                 ),
                                             }}
                                         >
@@ -195,11 +250,8 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({
                                                             />
                                                         );
                                                     },
-                                                    pre: ({ node, ...props }) => (
-                                                        <pre
-                                                            className="bg-light p-3 rounded overflow-auto text-dark"
-                                                            {...props}
-                                                        />
+                                                    pre: ({ node, children, ...props }) => (
+                                                        <CodeBlock>{children}</CodeBlock>
                                                     ),
                                                 }}
                                             >

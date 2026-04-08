@@ -696,16 +696,6 @@ const Options: React.FC = () => {
                                 <h5 className="card-title mb-0">{t("options.llm.title")}</h5>
                             </div>
                             <div className="card-body">
-                                {saveMessage && (
-                                    <div
-                                        className={`alert ${
-                                            saveMessage.includes("Error") ? "alert-danger" : "alert-success"
-                                        } alert-dismissible fade show`}
-                                        role="alert"
-                                    >
-                                        {saveMessage}
-                                    </div>
-                                )}
                                 <div className="row g-3">
                                     <div className="col-md-3">
                                         <label htmlFor="providerSelect" className="form-label">
@@ -815,6 +805,16 @@ const Options: React.FC = () => {
                                         >
                                             {t("options.llm.save")}
                                         </button>
+                                        {saveMessage && (
+                                            <div
+                                                className={`alert ${
+                                                    saveMessage.includes("Error") ? "alert-danger" : "alert-success"
+                                                } alert-dismissible fade show mt-3`}
+                                                role="alert"
+                                            >
+                                                {saveMessage}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -824,23 +824,6 @@ const Options: React.FC = () => {
                     {/* Contenido de Agentes */}
                     {activeTab === "agents" && (
                         <div>
-                            {agentSaveMessage && (
-                                <div
-                                    className={`alert ${
-                                        agentSaveMessage.includes("Error") ? "alert-danger" : "alert-success"
-                                    } alert-dismissible fade show`}
-                                    role="alert"
-                                >
-                                    {agentSaveMessage}
-                                    <button
-                                        type="button"
-                                        className="btn-close"
-                                        onClick={() => setAgentSaveMessage("")}
-                                        aria-label={t("common.close")}
-                                    ></button>
-                                </div>
-                            )}
-
                             {/* Sub-navegación para secciones de agentes */}
                             <ul className="nav nav-pills mb-3">
                                 <li className="nav-item">
@@ -888,6 +871,22 @@ const Options: React.FC = () => {
                                         >
                                             {t("options.agents.buttons.save")}
                                         </button>
+                                        {agentSaveMessage && (
+                                            <div
+                                                className={`alert ${
+                                                    agentSaveMessage.includes("Error") ? "alert-danger" : "alert-success"
+                                                } alert-dismissible fade show mt-3`}
+                                                role="alert"
+                                            >
+                                                {agentSaveMessage}
+                                                <button
+                                                    type="button"
+                                                    className="btn-close"
+                                                    onClick={() => setAgentSaveMessage("")}
+                                                    aria-label={t("common.close")}
+                                                ></button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
