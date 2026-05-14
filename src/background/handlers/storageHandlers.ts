@@ -5,6 +5,7 @@ import { ExerciseStorageManager } from "../../util/storage/ExerciseStorageManage
 import { ExplanationStorageManager } from "../../util/storage/ExplanationStorageManager";
 import { LabStorageManager, ReasoningEffort, VerbosityLevel } from "../../util/storage/LabStorageManager";
 import { ModeStorageManager } from "../../util/storage/ModeStorageManager";
+import { RefinerStorageManager } from "../../util/storage/RefinerStorageManager";
 import { getCachedCourse } from "./dataHandlers";
 
 export function handleUpdateExercise(request: any, sendResponse: (response?: any) => void): boolean {
@@ -308,5 +309,45 @@ export function handleCheckUserRoleForCourse(request: any, sendResponse: (respon
             });
         }
     })();
+    return true;
+}
+
+/**
+ * Persists a Refiner session (chat history + latest draft) so the student can
+ * close the modal and continue later.
+ */
+export function handleSaveRefinerHistory(request: any, sendResponse: (response?: any) => void): boolean {
+    const { pageId, exerciseName, chatHistory, latestDraft } = request;
+
+    (async () => {
+        try {
+            await RefinerStorageManager.saveSession(pageId, exerciseName, chatHistory ?? [], latestDraft);
+            sendResponse({ success: true });
+        } catch (error: any) {
+            console.error('Error al guardar sesión Refiner:', error);
+            sendResponse({ success: false, error: error.message });
+        }
+    })();
+
+    return true;
+}
+
+/**
+ * Loads a previously persisted Refiner session for an exercise.
+ * Returns { session: null } if there's no saved session yet.
+ */
+export function handleGetRefinerHistory(request: any, sendResponse: (response?: any) => void): boolean {
+    const { pageId, exerciseName } = request;
+
+    (async () => {
+        try {
+            const session = await RefinerStorageManager.getSession(pageId, exerciseName);
+            sendResponse({ success: true, session });
+        } catch (error: any) {
+            console.error('Error al cargar sesión Refiner:', error);
+            sendResponse({ success: false, error: error.message });
+        }
+    })();
+
     return true;
 }

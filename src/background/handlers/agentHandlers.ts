@@ -1,9 +1,10 @@
 import { t } from "../../i18n/backend";
+import { AIRole } from "../../types/shared";
 import { EvaluationStorageManager } from "../../util/storage/EvaluationStorageManager";
 import { ExerciseStorageManager } from "../../util/storage/ExerciseStorageManager";
 import { ExplanationStorageManager } from "../../util/storage/ExplanationStorageManager";
 import { LabStorageManager } from "../../util/storage/LabStorageManager";
-import { getCourseAgent, getEvaluationAgent, getExplanationAgent } from "../context";
+import { getCourseAgent, getEvaluationAgent, getExplanationAgent, getRefinerAgent } from "../context";
 
 /**
  * Builds a summary of the student's progress across all labs in the course.
@@ -99,6 +100,15 @@ export function handleGenerateExplanation(request: any, sendResponse: (response?
                     });
                     return;
                 }
+
+                if (role === 'refiner') {
+                    console.log(`Intento de explicar ejercicio bloqueado por rol refiner: ${exerciseName}`);
+                    sendResponse({
+                        success: false,
+                        error: `Este ejercicio está en modo Refiner. Usa la opción "Refinar" en su lugar (${exerciseName}).`,
+                    });
+                    return;
+                }
                 const progressSummary = await buildProgressSummary(courseId);
 
                 // Get accumulated concepts from current and previous required labs
@@ -174,7 +184,7 @@ export function handleEvaluateSolution(request: any, sendResponse: (response?: a
 
     (async () => {
         try {
-            let role: 'observer' | 'proofreader' | 'tutor' | 'challenger' = 'tutor';
+            let role: AIRole = 'tutor';
             if (pageId) {
                 const exerciseData = await ExerciseStorageManager.getExerciseData(pageId);
                 const exercise = exerciseData?.exercises.find(ex => ex.name === exerciseName);
@@ -185,6 +195,15 @@ export function handleEvaluateSolution(request: any, sendResponse: (response?: a
                     sendResponse({
                         success: false,
                         error: `La IA no está disponible para este ejercicio (${exerciseName}).`,
+                    });
+                    return;
+                }
+
+                if (role === 'refiner') {
+                    console.log(`Intento de evaluar ejercicio bloqueado por rol refiner: ${exerciseName}`);
+                    sendResponse({
+                        success: false,
+                        error: `Este ejercicio está en modo Refiner. No se evalúan soluciones directamente (${exerciseName}).`,
                     });
                     return;
                 }
@@ -395,6 +414,174 @@ export function handleSendExplanationChatMessage(request: any, sendResponse: (re
             sendResponse({ success: true, response });
         } catch (error: any) {
             console.error('Error al procesar mensaje de chat de explicación:', error);
+            sendResponse({ success: false, error: error.message });
+        }
+    })();
+
+    return true;
+}
+
+/**
+ * Restores a refiner session into the agent. Mirrors restoreExplanationContext: rebuilds
+ * system prompt + replays chat history, because the service worker can be evicted between turns.
+ */
+async function restoreRefinerContext(
+    pageId: string,
+    exerciseName: string,
+    courseId?: string,
+    chatHistory?: Array<{ role: string; content: string }>
+): Promise<void> {
+    const refinerAgent = getRefinerAgent();
+    const exerciseData = await ExerciseStorageManager.getExerciseData(pageId);
+    if (!exerciseData) {
+        throw new Error(t("errors.loadingExercise", { exerciseName: exerciseName }));
+    }
+
+    const exercise = exerciseData.exercises.find(ex => ex.name === exerciseName);
+    if (!exercise) {
+        throw new Error(t("errors.loadingExercise", { exerciseName: exerciseName }));
+    }
+
+    const accumulatedConcepts = courseId
+        ? await ExerciseStorageManager.getAccumulatedConcepts(courseId, pageId)
+        : exerciseData.concepts;
+    const progressSummary = await buildProgressSummary(courseId);
+
+    const safeChatHistory = (chatHistory || [])
+        .filter(msg => (msg.role === "user" || msg.role === "assistant") && typeof msg.content === "string")
+        .map(msg => ({ role: msg.role, content: msg.content }));
+
+    await refinerAgent.restoreSession(
+        exercise.name,
+        exercise.statement,
+        exerciseData.exerciseContext,
+        accumulatedConcepts,
+        exerciseData.learningObjectives,
+        progressSummary,
+        safeChatHistory,
+        pageId
+    );
+}
+
+/**
+ * Starts a new refinement session and evaluates the student's first draft.
+ * Request: { exerciseName, pageId, courseId, studentDraft }
+ */
+export function handleStartRefinerSession(request: any, sendResponse: (response?: any) => void): boolean {
+    const { exerciseName, pageId, courseId, studentDraft } = request;
+    const refinerAgent = getRefinerAgent();
+
+    console.log(`Iniciando sesión Refiner para: ${exerciseName}`);
+
+    (async () => {
+        try {
+            const exerciseData = await ExerciseStorageManager.getExerciseData(pageId);
+            if (!exerciseData) {
+                sendResponse({
+                    success: false,
+                    error: t("errors.loadingExercise", { exerciseName: exerciseName }),
+                });
+                return;
+            }
+
+            const exercise = exerciseData.exercises.find(ex => ex.name === exerciseName);
+            if (!exercise) {
+                sendResponse({
+                    success: false,
+                    error: t("errors.loadingExercise", { exerciseName: exerciseName }),
+                });
+                return;
+            }
+
+            if (exercise.role !== 'refiner') {
+                sendResponse({
+                    success: false,
+                    error: `Este ejercicio no está configurado como Refiner (${exerciseName}).`,
+                });
+                return;
+            }
+
+            const accumulatedConcepts = courseId
+                ? await ExerciseStorageManager.getAccumulatedConcepts(courseId, pageId)
+                : exerciseData.concepts;
+            const progressSummary = await buildProgressSummary(courseId);
+
+            let responseOptions = undefined;
+            if (courseId) {
+                const labConfig = await LabStorageManager.getLabConfig(courseId, pageId);
+                if (labConfig) {
+                    responseOptions = {
+                        verbosity: labConfig.verbosity,
+                        reasoningEffort: labConfig.reasoningEffort,
+                    };
+                }
+            }
+
+            await refinerAgent.startSession(
+                exercise.name,
+                exercise.statement,
+                exerciseData.exerciseContext,
+                accumulatedConcepts,
+                exerciseData.learningObjectives,
+                progressSummary,
+                pageId,
+                responseOptions
+            );
+
+            const feedback = await refinerAgent.evaluateDraft(studentDraft);
+            console.log(`Refiner: feedback inicial generado para ${exerciseName}`);
+
+            sendResponse({ success: true, feedback });
+        } catch (error: any) {
+            console.error('Error al iniciar sesión Refiner:', error);
+            sendResponse({ success: false, error: error.message });
+        }
+    })();
+
+    return true;
+}
+
+/**
+ * Evaluates an updated draft within an existing session.
+ * Request: { exerciseName, pageId, courseId, studentDraft, chatHistory }
+ */
+export function handleRefinerDraft(request: any, sendResponse: (response?: any) => void): boolean {
+    const { exerciseName, pageId, courseId, studentDraft, chatHistory } = request;
+    const refinerAgent = getRefinerAgent();
+
+    console.log(`Refiner: evaluando borrador actualizado para ${exerciseName}`);
+
+    (async () => {
+        try {
+            await restoreRefinerContext(pageId, exerciseName, courseId, chatHistory);
+            const feedback = await refinerAgent.evaluateDraft(studentDraft);
+            sendResponse({ success: true, feedback });
+        } catch (error: any) {
+            console.error('Error al evaluar borrador Refiner:', error);
+            sendResponse({ success: false, error: error.message });
+        }
+    })();
+
+    return true;
+}
+
+/**
+ * Sends a follow-up question without a new draft.
+ * Request: { message, exerciseName, pageId, courseId, chatHistory }
+ */
+export function handleRefinerFollowUp(request: any, sendResponse: (response?: any) => void): boolean {
+    const { message, exerciseName, pageId, courseId, chatHistory } = request;
+    const refinerAgent = getRefinerAgent();
+
+    console.log(`Refiner: pregunta de follow-up para ${exerciseName}`);
+
+    (async () => {
+        try {
+            await restoreRefinerContext(pageId, exerciseName, courseId, chatHistory);
+            const response = await refinerAgent.sendFollowUp(message);
+            sendResponse({ success: true, response });
+        } catch (error: any) {
+            console.error('Error en follow-up Refiner:', error);
             sendResponse({ success: false, error: error.message });
         }
     })();

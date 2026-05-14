@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import ChatSidebar from "../components/ChatSidebar";
 import EvaluationListModal from "../components/EvaluationListModal";
 import ExerciseModal from "../components/ExerciseModal";
+import RefinerModal from "../components/RefinerModal";
 import SolutionModal from "../components/SolutionModal";
 import i18n, { i18nInitialized } from "../i18n";
 import { ConfigManager } from "../util/config/ConfigManager";
@@ -18,7 +19,7 @@ const PAGE_VIEW_HREF = "https://egela.ehu.eus/mod/page/view.php";
 interface Exercise {
     name: string;
     statement: string;
-    role?: 'observer' | 'proofreader' | 'tutor' | 'challenger';
+    role?: 'observer' | 'proofreader' | 'tutor' | 'challenger' | 'refiner';
 }
 
 type ViewState = "loading" | "chat" | "hidden";
@@ -83,6 +84,7 @@ const ExtensionContent: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
     const [isSolutionModalOpen, setIsSolutionModalOpen] = useState<boolean>(false);
     const [isEvaluationListModalOpen, setIsEvaluationListModalOpen] = useState<boolean>(false);
+    const [isRefinerModalOpen, setIsRefinerModalOpen] = useState<boolean>(false);
     const [selectedExerciseIndex, setSelectedExerciseIndex] = useState<number>(0);
     const [selectedEvaluationExerciseName, setSelectedEvaluationExerciseName] = useState<string>("");
     const [currentPageId, setCurrentPageId] = useState<string | null>(null);
@@ -341,6 +343,13 @@ const ExtensionContent: React.FC = () => {
                 });
                 return false;
             }
+            if (message.action === "openRefinerModal") {
+                console.log("[content] Received message to open Refiner modal:", message.exerciseIndex);
+                handleOpenRefinerModalByIndex(message.exerciseIndex).catch(err => {
+                    console.error("[content] Error opening Refiner modal:", err);
+                });
+                return false;
+            }
             if (message.action === "extractPdfText") {
                 console.log("[content] Received message to extract PDF text:", message.filename);
                 extractPdfTextFromBase64(message.pdfBase64, message.filename, message.resourceName, message.size)
@@ -490,6 +499,31 @@ const ExtensionContent: React.FC = () => {
         setIsSolutionModalOpen(false);
     };
 
+    const handleCloseRefinerModal = () => {
+        setIsRefinerModalOpen(false);
+    };
+
+    const handleOpenRefinerModal = (exerciseName: string) => {
+        const exerciseIndex = exercises.findIndex(ex => ex.name === exerciseName);
+        if (exerciseIndex < 0) {
+            console.warn(`[content] Refiner: exercise not found: ${exerciseName}`);
+            return;
+        }
+        setSelectedExerciseIndex(exerciseIndex);
+        setIsRefinerModalOpen(true);
+    };
+
+    const handleOpenRefinerModalByIndex = async (exerciseIndex: number) => {
+        if (exercises.length === 0) {
+            const pageId = currentPageId || getPageIdFromUrl();
+            if (pageId) {
+                await loadExercisesFromCache(pageId);
+            }
+        }
+        setSelectedExerciseIndex(exerciseIndex);
+        setIsRefinerModalOpen(true);
+    };
+
     // Helper para actualizar el contexto de ejercicios (usado por ambas funciones de carga)
     const updateExerciseContext = (data: any) => {
         if (data.exercises) {
@@ -637,7 +671,8 @@ const ExtensionContent: React.FC = () => {
                     onExplanationGenerated={handleExplanationGenerated}
                     onOpenEvaluation={handleOpenEvaluationList}
                     onEvaluationGenerated={handleEvaluationGenerated}
-                    isAnyModalOpen={isModalOpen || isSolutionModalOpen || isEvaluationListModalOpen}
+                    isAnyModalOpen={isModalOpen || isSolutionModalOpen || isEvaluationListModalOpen || isRefinerModalOpen}
+                    onOpenRefiner={handleOpenRefinerModal}
                     hasExercisesLoaded={exercises.length > 0}
                     isLoadingCourse={isLoadingCourse}
                     courseLoadError={courseLoadError}
@@ -680,6 +715,18 @@ const ExtensionContent: React.FC = () => {
                     isOpen={isEvaluationListModalOpen}
                     onClose={handleCloseEvaluationListModal}
                     pageId={currentPageId || undefined}
+                />
+            )}
+
+            {/* RefinerModal: borrador iterativo + feedback de IA sin solución */}
+            {isRefinerModalOpen && exercises.length > 0 && exercises[selectedExerciseIndex] && (
+                <RefinerModal
+                    exercise={exercises[selectedExerciseIndex]}
+                    isOpen={isRefinerModalOpen}
+                    onClose={handleCloseRefinerModal}
+                    pageId={currentPageId || undefined}
+                    courseId={courseId || undefined}
+                    exerciseContext={exerciseContext}
                 />
             )}
         </>

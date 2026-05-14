@@ -1,6 +1,6 @@
 export { Exercise };
 
-type AIRole = 'observer' | 'proofreader' | 'tutor' | 'challenger';
+type AIRole = 'observer' | 'proofreader' | 'tutor' | 'challenger' | 'refiner';
 
 /**
  * Represents an exercise found on an Egela page

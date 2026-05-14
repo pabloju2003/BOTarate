@@ -85,7 +85,7 @@ export function handleGetExerciseList(request: any, sendResponse: (response?: an
                     console.log(`Ejercicios recuperados del storage (${cachedData.exercises.length} ejercicios)`);
 
                     const exercises = cachedData.exercises.map(
-                        (ex: { name: string; statement: string; role?: 'observer' | 'proofreader' | 'tutor' | 'challenger'; allowed?: boolean; isPicky?: boolean }) =>
+                        (ex: { name: string; statement: string; role?: 'observer' | 'proofreader' | 'tutor' | 'challenger' | 'refiner'; allowed?: boolean; isPicky?: boolean }) =>
                             new Exercise(
                                 ex.name,
                                 ex.statement,

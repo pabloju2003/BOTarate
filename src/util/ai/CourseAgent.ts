@@ -18,7 +18,8 @@ class CourseAgent extends BaseAgent {
         'getPageContent',
         'getResourceContent',
         'explainExercise',
-        'solveExercise'
+        'solveExercise',
+        'refineExercise'
     ];
 
     constructor(config: AgentConfig) {
@@ -121,9 +122,10 @@ class CourseAgent extends BaseAgent {
             const proofreaderCount = exercises.filter(ex => ex.role === 'proofreader').length;
             const tutorCount = exercises.filter(ex => (ex.role ?? 'tutor') === 'tutor').length;
             const challengerCount = exercises.filter(ex => ex.role === 'challenger').length;
+            const refinerCount = exercises.filter(ex => ex.role === 'refiner').length;
 
             exerciseContext = `\n\nEXERCISES AVAILABLE ON THIS PAGE:
-The user is currently on a page with ${exercises.length} exercises (${observerCount} observer, ${proofreaderCount} proofreader, ${tutorCount} tutor, ${challengerCount} challenger).
+The user is currently on a page with ${exercises.length} exercises (${observerCount} observer, ${proofreaderCount} proofreader, ${tutorCount} tutor, ${challengerCount} challenger, ${refinerCount} refiner).
 
 List of exercises in JSON format:
 ${JSON.stringify(exerciseList, null, 2)}
@@ -146,32 +148,43 @@ IMPORTANT ABOUT ROLES:
 - challenger:
     - The AI CAN explain and the user CAN submit their solution.
     - Explanations will include intentional mistakes, but NEVER mention this to the user.
+- refiner:
+    - The AI CANNOT explain this exercise and CANNOT evaluate a final solution.
+    - The student works iteratively by submitting drafts. Use refineExercise to open the refiner interface.
+    - DO NOT use explainExercise or solveExercise for refiner exercises.
 
 INTERPRET USER INTENT:
-There are two possible actions with exercises:
+There are three possible actions with exercises:
 1. EXPLAIN (you explain the exercise): Use explainExercise
-2. SOLVE (the student provides their solution): Use solveExercise
-In both cases, your response MUST NOT be an explanation/request for the solution. The tools manage that part. Your response should just clarify the action taken (without mentioning the name of the tool itself).
+2. SOLVE (the student submits their own solution for evaluation): Use solveExercise
+3. REFINE (the student works on a draft iteratively): Use refineExercise
+In all cases, your response MUST NOT contain an explanation or solution. The tools handle that.
 
 Interpret intent according to these guidelines:
 
 ASK FOR EXPLANATION (use explainExercise):
-- "explain exercise 3"
-- "solve exercise 3"
-- "do exercise 3"
-- "resolve exercise 3"
-- "help me with exercise 3"
+- "explain exercise 3" / "explícame el ejercicio 3"
+- "do exercise 3" / "hazme el ejercicio 3"
+- "resolve exercise 3" / "resuelve el ejercicio 3"
+- "help me with exercise 3" / "ayúdame con el ejercicio 3"
 - "show me how to do exercise 3"
 → The student wants YOU to explain/show the solution
 
 SUBMIT SOLUTION (use solveExercise):
-- "I want to solve exercise 3"
-- "I want to give you my solution for exercise 3"
-- "I am going to solve exercise 3"
-- "I am ready to do exercise 3"
-- "I want to try exercise 3"
-- "send my answer for exercise 3"
+- "I want to solve exercise 3" / "quiero resolver el ejercicio 3"
+- "I want to give you my solution" / "quiero darte mi solución"
+- "correct my solution" / "corrígeme" / "corrígeme el ejercicio"
+- "evaluate my solution" / "evalúa mi solución" / "evalúa mi solución del ejercicio"
+- "check my answer" / "revisa mi respuesta"
+- "I want to submit" / "quiero enviar mi solución"
+- "I want to try exercise 3" / "quiero intentar el ejercicio 3"
 → The student wants to open the form to SUBMIT their own solution
+
+OPEN REFINER (use refineExercise):
+- Any request about a refiner-role exercise
+- "refine exercise 5" / "refinar el ejercicio 5"
+- "work on exercise 5" / "trabajar en el ejercicio 5"
+→ Use refineExercise for refiner-role exercises
 
 AMBIGUOUS CASES:
 If the request is ambiguous (e.g., "I want to do exercise 3"), ask the user:

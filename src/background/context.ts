@@ -3,6 +3,7 @@ import { CourseAgent } from "../util/ai/CourseAgent";
 import { EvaluationAgent } from "../util/ai/EvaluationAgent";
 import { ExerciseAgent } from "../util/ai/ExerciseAgent";
 import { ExplanationAgent } from "../util/ai/ExplanationAgent";
+import { RefinerAgent } from "../util/ai/RefinerAgent";
 import { AgentConfigStorageManager } from "../util/storage/AgentConfigStorageManager";
 import { getCachedCourse } from "./handlers/dataHandlers";
 
@@ -12,6 +13,7 @@ let courseAgent: CourseAgent;
 let exerciseAgent: ExerciseAgent;
 let explanationAgent: ExplanationAgent;
 let evaluationAgent: EvaluationAgent;
+let refinerAgent: RefinerAgent;
 
 export async function initializeAgents(courseId?: string): Promise<void> {
     agentsConfig = await AgentConfigStorageManager.loadConfig(courseId);
@@ -20,6 +22,7 @@ export async function initializeAgents(courseId?: string): Promise<void> {
     exerciseAgent = new ExerciseAgent(agentsConfig);
     explanationAgent = new ExplanationAgent(agentsConfig);
     evaluationAgent = new EvaluationAgent(agentsConfig);
+    refinerAgent = new RefinerAgent(agentsConfig);
 
     console.log(`Agentes inicializados con configuración${courseId ? ` del curso ${courseId}` : ''}`);
 }
@@ -50,6 +53,13 @@ export function getEvaluationAgent(): EvaluationAgent {
         throw new Error("El agente de evaluaciones no ha sido inicializado");
     }
     return evaluationAgent;
+}
+
+export function getRefinerAgent(): RefinerAgent {
+    if (!refinerAgent) {
+        throw new Error("El agente de refinamiento no ha sido inicializado");
+    }
+    return refinerAgent;
 }
 
 export function markConfigLoaded(): void {

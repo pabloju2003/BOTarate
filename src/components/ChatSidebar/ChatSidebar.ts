@@ -14,6 +14,7 @@ export interface ChatSidebarProps {
     onExplanationGenerated?: () => void;
     onOpenEvaluation?: (exerciseName: string) => void;
     onEvaluationGenerated?: () => void;
+    onOpenRefiner?: (exerciseName: string) => void;
     isAnyModalOpen?: boolean;
     hasExercisesLoaded?: boolean;
     onIdentifyExercises?: () => void;
@@ -327,7 +328,7 @@ export const useChatSidebar = (props: ChatSidebarProps) => {
                 const loaded = resp.data.exercises.map((ex: any) => ({
                     name: ex.name,
                     statement: ex.statement,
-                    role: ex.role ?? (ex.allowed === false ? 'challenger' : ex.isPicky === true ? 'proofreader' : 'tutor'),
+                    role: ex.role ?? (ex.allowed === false ? 'observer' : ex.isPicky === true ? 'challenger' : 'tutor'),
                 }));
                 setExercises(loaded);
             } else {

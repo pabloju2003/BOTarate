@@ -179,6 +179,29 @@ export class ToolFunctions {
     }
 
     /**
+     * Opens the iterative Refiner modal for an exercise configured in refiner mode.
+     */
+    static async refineExercise(args: { exerciseIndex: number }): Promise<string> {
+        const arrayIndex = args.exerciseIndex - 1;
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+
+        if (tabs.length > 0 && tabs[0].id) {
+            try {
+                await chrome.tabs.sendMessage(tabs[0].id, {
+                    action: 'openRefinerModal',
+                    exerciseIndex: arrayIndex
+                });
+                return `Opening the Refiner draft form for exercise #${args.exerciseIndex}...`;
+            } catch (error) {
+                console.error('[refineExercise] Error sending message to content script:', error);
+                return `Error opening Refiner form for exercise #${args.exerciseIndex}`;
+            }
+        }
+
+        return `Could not open Refiner form. Make sure you are on the correct page.`;
+    }
+
+    /**
      * Gets the content of a text file filtered by a regular expression
      * @param args Arguments with pageId, fileId and regexPattern
      * @returns Filtered file content

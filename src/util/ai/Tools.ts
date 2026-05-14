@@ -4,7 +4,7 @@ export type { ToolCall, ToolName, ToolResult };
 /**
  * Nombres de las herramientas disponibles para el LLM
  */
-type ToolName = 'getSectionContent' | 'getPageContent' | 'getResourceContent' | 'explainExercise' | 'solveExercise' | 'getFilteredFileContent' | 'postExercises' | 'analyzeImage';
+type ToolName = 'getSectionContent' | 'getPageContent' | 'getResourceContent' | 'explainExercise' | 'solveExercise' | 'refineExercise' | 'getFilteredFileContent' | 'postExercises' | 'analyzeImage';
 
 /**
  * Estructura de una llamada a herramienta del LLM
@@ -109,7 +109,25 @@ const TOOLS = [
         type: 'function',
         function: {
             name: 'solveExercise',
-            description: 'Inicia el proceso de resolución de un ejercicio por parte del estudiante. Esta herramienta abrirá el modal de resolución donde el estudiante puede introducir su solución para ser evaluada. Usa esta herramienta cuando el usuario indique que quiere resolver, intentar, o enviar su solución para un ejercicio.',
+            description: 'Inicia el proceso de resolución de un ejercicio por parte del estudiante. Esta herramienta abrirá el modal de resolución donde el estudiante puede introducir su solución para ser evaluada. Usa esta herramienta cuando el usuario indique que quiere resolver, intentar, o enviar su solución para un ejercicio. NO uses esta herramienta para ejercicios cuyo rol es "refiner": en ese caso usa refineExercise.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    exerciseIndex: {
+                        type: 'number',
+                        description: 'El índice del ejercicio en la lista de ejercicios disponibles. No es 0-based, sino directamente el que aparece al lado del ejercicio.'
+                    }
+                },
+                required: ['exerciseIndex'],
+                additionalProperties: false
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'refineExercise',
+            description: 'Abre el modal de refinamiento iterativo para un ejercicio configurado en modo Refiner. El alumno enviará un borrador (mezcla de código y comentarios en lenguaje natural) y la IA evaluará si va en la dirección correcta sin dar la solución. Usa esta herramienta SOLO cuando el ejercicio tenga rol "refiner" y el alumno indique que quiere trabajar/refinar/diseñar su solución.',
             parameters: {
                 type: 'object',
                 properties: {

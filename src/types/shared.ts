@@ -1,6 +1,6 @@
 export type VerbosityLevel = "low" | "medium" | "high";
 export type ReasoningEffort = "minimal" | "low" | "medium" | "high";
-export type AIRole = "observer" | "proofreader" | "tutor" | "challenger";
+export type AIRole = "observer" | "proofreader" | "tutor" | "challenger" | "refiner";
 
 export interface Lab {
     id: string;

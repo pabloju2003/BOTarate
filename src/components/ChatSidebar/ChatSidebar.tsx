@@ -271,6 +271,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = props => {
                         exercisesWithEvaluations={exercisesWithEvaluations}
                         onExplanationClick={handleExplanationClick}
                         onEvaluationClick={handleEvaluationClick}
+                        onRefinerClick={props.onOpenRefiner}
                     />
                 ) : activeTab === "config" ? (
                     <ExerciseConfigTab

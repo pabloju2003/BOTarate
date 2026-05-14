@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 interface Exercise {
     name: string;
     statement: string;
-    role?: 'observer' | 'proofreader' | 'tutor' | 'challenger';
+    role?: 'observer' | 'proofreader' | 'tutor' | 'challenger' | 'refiner';
 }
 
 interface ExercisesTabProps {
@@ -15,6 +15,7 @@ interface ExercisesTabProps {
     exercisesWithEvaluations: string[];
     onExplanationClick: (exerciseName: string) => void;
     onEvaluationClick: (exerciseName: string) => void;
+    onRefinerClick?: (exerciseName: string) => void;
 }
 
 const ExercisesTab: React.FC<ExercisesTabProps> = ({
@@ -25,6 +26,7 @@ const ExercisesTab: React.FC<ExercisesTabProps> = ({
     exercisesWithEvaluations,
     onExplanationClick,
     onEvaluationClick,
+    onRefinerClick,
 }) => {
     const { t } = useTranslation();
 
@@ -58,6 +60,7 @@ const ExercisesTab: React.FC<ExercisesTabProps> = ({
                 const hasExplanation = exercisesWithExplanations.includes(exercise.name);
                 const hasEvaluation = exercisesWithEvaluations.includes(exercise.name);
                 const isObserver = exercise.role === 'observer';
+                const isRefiner = exercise.role === 'refiner';
                 // const isPicky = exercise.role === 'proofreader'; // No mostrar para estudiantes
 
                 return (
@@ -72,12 +75,27 @@ const ExercisesTab: React.FC<ExercisesTabProps> = ({
                                 {isObserver && (
                                     <span className="badge bg-warning text-dark ms-2">{t("exercises.challenge")}</span>
                                 )}
+                                {isRefiner && (
+                                    <span className="badge bg-info text-dark ms-2">
+                                        {t("exercises.refiner", "Refiner")}
+                                    </span>
+                                )}
                                 {/* {isPicky && (
                                     <span className="badge bg-info text-dark ms-2">{t("exercises.picky")}</span>
                                 )} */}
                             </div>
                             <div className="d-flex gap-2">
-                                {hasExplanation && (
+                                {isRefiner && onRefinerClick && (
+                                    <button
+                                        type="button"
+                                        className="btn btn-sm btn-info text-dark"
+                                        onClick={() => onRefinerClick(exercise.name)}
+                                    >
+                                        <i className="bi bi-pencil-square me-1"></i>
+                                        {t("exercises.refine", "Refinar")}
+                                    </button>
+                                )}
+                                {!isRefiner && hasExplanation && (
                                     <button
                                         type="button"
                                         className="btn btn-sm btn-primary"
@@ -87,7 +105,7 @@ const ExercisesTab: React.FC<ExercisesTabProps> = ({
                                         {t("exercises.viewExplanation")}
                                     </button>
                                 )}
-                                {hasEvaluation && (
+                                {!isRefiner && hasEvaluation && (
                                     <button
                                         type="button"
                                         className="btn btn-sm btn-success"

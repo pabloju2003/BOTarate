@@ -45,6 +45,16 @@ export interface AgentConfig {
     };
 
     /**
+     * Variables for refiner agent (iterative draft refinement)
+     */
+    refinerAgent?: {
+        role: string;
+        taskDescription: string;
+        evaluationGuidelines: string;
+        importantNotes?: string;
+    };
+
+    /**
      * Common configuration for all agents
      */
     common: {

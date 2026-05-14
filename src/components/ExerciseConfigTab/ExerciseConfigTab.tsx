@@ -36,6 +36,7 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
         { role: "proofreader", label: "Proofreader" },
         { role: "tutor", label: "Tutor" },
         { role: "challenger", label: "Challenger" },
+        { role: "refiner", label: "Refiner" },
     ];
 
     const isInLab = props.pageId && props.pageId.trim() !== "";
@@ -88,6 +89,7 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
                     <li><strong>Proofreader:</strong> el agente actúa como revisor crítico y puede señalar o proponer correcciones.</li>
                     <li><strong>Tutor:</strong> comportamiento normal de tutor (rol por defecto).</li>
                     <li><strong>Challenger:</strong> ejercicio solo estudiante, sin explicación directa.</li>
+                    <li><strong>Refiner:</strong> el alumno envía borradores progresivos y la IA evalúa si va en la dirección correcta, sin dar la respuesta.</li>
                 </ul>
                 <p className="mb-0 small">{t("options.exerciseConfig.infoFooter")}</p>
             </div>
@@ -141,7 +143,7 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
                                 scope="col"
                                 className="fw-bold"
                                 style={{
-                                    width: "44%",
+                                    width: "40%",
                                     backgroundColor: "#f8f9fa",
                                     color: "black",
                                     borderColor: "#dee2e6",
@@ -156,7 +158,7 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
                                     scope="col"
                                     className="text-center fw-bold"
                                     style={{
-                                        width: "14%",
+                                        width: "12%",
                                         backgroundColor: "#f8f9fa",
                                         color: "black",
                                         borderColor: "#dee2e6",

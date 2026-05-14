@@ -10,8 +10,11 @@ import {
     handleGenerateResponse,
     handleInitializeExplanationChat,
     handleLoadChatHistory,
+    handleRefinerDraft,
+    handleRefinerFollowUp,
     handleResetChatHistory,
-    handleSendExplanationChatMessage
+    handleSendExplanationChatMessage,
+    handleStartRefinerSession
 } from "./handlers/agentHandlers";
 import { handleCheckConfiguration, handleGetModelList, handleReloadAgentConfig, handleUpdateConfig } from "./handlers/configHandlers";
 import {
@@ -30,10 +33,12 @@ import {
     handleCheckUserRole,
     handleCheckUserRoleForCourse,
     handleGetLabConfig,
+    handleGetRefinerHistory,
     handleGetUserCourses,
     handleRemoveChallengeExercisesExplanations,
     handleRemoveExerciseData,
     handleSaveChatHistory,
+    handleSaveRefinerHistory,
     handleUpdateConcepts,
     handleUpdateExercise,
     handleUpdateExerciseRole,
@@ -132,6 +137,16 @@ function processMessage(request: any, sender: chrome.runtime.MessageSender, send
             return handleInitializeExplanationChat(request, sendResponse);
         case "sendExplanationChatMessage":
             return handleSendExplanationChatMessage(request, sendResponse);
+        case "startRefinerSession":
+            return handleStartRefinerSession(request, sendResponse);
+        case "refinerDraft":
+            return handleRefinerDraft(request, sendResponse);
+        case "refinerFollowUp":
+            return handleRefinerFollowUp(request, sendResponse);
+        case "saveRefinerHistory":
+            return handleSaveRefinerHistory(request, sendResponse);
+        case "getRefinerHistory":
+            return handleGetRefinerHistory(request, sendResponse);
         case "saveChatHistory":
             return handleSaveChatHistory(request, sendResponse);
         case "checkUserRole":

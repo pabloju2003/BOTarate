@@ -106,6 +106,8 @@ ${getLLMLanguageInstruction()}`;
                 return await ToolFunctions.explainExercise(args);
             case 'solveExercise':
                 return await ToolFunctions.solveExercise(args);
+            case 'refineExercise':
+                return await ToolFunctions.refineExercise(args);
             case 'getFilteredFileContent':
                 return ToolFunctions.getFilteredFileContent(args);
             case 'analyzeImage':
