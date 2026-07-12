@@ -115,7 +115,10 @@ class CourseAgent extends BaseAgent {
             const exerciseList = exercises.map((ex, index) => ({
                 index: index + 1,
                 name: ex.name,
-                role: ex.role ?? 'tutor'
+                role: ex.role ?? 'tutor',
+                statementExcerpt: ex.statement
+                    ? (ex.statement.length > 180 ? `${ex.statement.slice(0, 180)}...` : ex.statement)
+                    : undefined
             }));
 
             const observerCount = exercises.filter(ex => ex.role === 'observer').length;
@@ -127,12 +130,37 @@ class CourseAgent extends BaseAgent {
             exerciseContext = `\n\nEXERCISES AVAILABLE ON THIS PAGE:
 The user is currently on a page with ${exercises.length} exercises (${observerCount} observer, ${proofreaderCount} proofreader, ${tutorCount} tutor, ${challengerCount} challenger, ${refinerCount} refiner).
 
+╔══════════════════════════════════════════════════════════════════════╗
+║ ABSOLUTE RULE — TOOLS ARE MANDATORY FOR EXERCISES (NO EXCEPTIONS)      ║
+╚══════════════════════════════════════════════════════════════════════╝
+ANY request that refers to a specific exercise (explain it, solve it, help
+with it, give a hint, show the answer, refine it, evaluate it, etc.) MUST be
+handled by calling the corresponding tool — explainExercise, solveExercise or
+refineExercise. You are STRICTLY FORBIDDEN from answering such a request
+directly in the chat.
+
+This means, with NO exceptions:
+- NEVER write, paraphrase, summarize, hint at, or partially reveal the
+  explanation or solution of an exercise in your chat message.
+- NEVER decide that a request is "simple enough" to answer without the tool.
+  There is no such case: if it concerns a specific exercise, you call the tool.
+- Your text reply must NOT contain exercise content. The tool — and ONLY the
+  tool — produces the explanation, the solution form, or the refiner interface.
+- If you find yourself about to type an explanation or solution into the chat,
+  STOP and emit the tool call instead.
+- The only permitted text reply about a specific exercise is: (a) a tool call,
+  (b) a clarifying question for genuinely ambiguous intent (see below), or
+  (c) informing the user that AI is unavailable for that role (e.g. observer).
+
+Violating this rule (answering an exercise directly) is a critical failure.
+
 List of exercises in JSON format:
 ${JSON.stringify(exerciseList, null, 2)}
 
 IMPORTANT - HOW TO USE THE INDEX:
 - When the user asks to see/explain/solve an exercise (e.g., "explain exercise 3", "the second exercise", etc.), use the "index" field of the corresponding JSON.
 - For example, if the user asks "explain exercise 2", look for the object with "index": 2 in the JSON and use that value (2) in the tool.
+- When the user refers to an exercise by topic instead of number (e.g., "the one about co-authors", "el de agrupar por editor"), compare their description against each exercise's "statementExcerpt" (a short excerpt of the exercise statement) to identify the matching "index" before calling the tool. If more than one exercise seems to match, ask the user to clarify instead of guessing.
 
 IMPORTANT ABOUT ROLES:
 - observer:
@@ -158,7 +186,9 @@ There are three possible actions with exercises:
 1. EXPLAIN (you explain the exercise): Use explainExercise
 2. SOLVE (the student submits their own solution for evaluation): Use solveExercise
 3. REFINE (the student works on a draft iteratively): Use refineExercise
-In all cases, your response MUST NOT contain an explanation or solution. The tools handle that.
+In ALL cases you MUST call the corresponding tool and your chat response MUST
+NOT contain any explanation, solution, hint, or exercise content whatsoever.
+The tools — and only the tools — handle that. See the ABSOLUTE RULE above.
 
 Interpret intent according to these guidelines:
 
