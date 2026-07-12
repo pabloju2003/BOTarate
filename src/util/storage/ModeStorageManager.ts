@@ -22,13 +22,17 @@ interface DevModeConfig {
  */
 export class ModeStorageManager extends BaseStorageManager {
     private static readonly MODE_STORAGE_KEY = "app_mode";
+    private static readonly MODE_COURSE_PREFIX = "app_mode_course_";
     private static readonly USER_ROLE_STORAGE_KEY = "user_role";
     private static readonly USER_ROLE_COURSE_PREFIX = "user_role_course_";
     private static readonly USER_ROLE_CACHE_DURATION = 3600000; // 1 hour in milliseconds
     private static readonly DEV_MODE_CONFIG_KEY = "dev_mode_config";
 
     /**
-     * Saves the current operation mode
+     * Saves the current operation mode (global, not tied to any course)
+     * @deprecated Prefer saveModeForCourse when a courseId is available, so switching
+     * between courses where the user is teacher in more than one doesn't leak the mode
+     * selected in a different course.
      * @param mode Mode to save
      */
     static async saveMode(mode: AppMode): Promise<void> {
@@ -37,7 +41,8 @@ export class ModeStorageManager extends BaseStorageManager {
     }
 
     /**
-     * Gets the current operation mode
+     * Gets the current operation mode (global, not tied to any course)
+     * @deprecated Prefer getModeForCourse when a courseId is available.
      * @returns Saved mode or default based on user role (TEACHER if teacher, STUDENT otherwise)
      */
     static async getMode(): Promise<AppMode> {
@@ -53,6 +58,29 @@ export class ModeStorageManager extends BaseStorageManager {
         }
 
         return AppMode.STUDENT;
+    }
+
+    /**
+     * Saves the current operation mode for a specific course.
+     * This prevents the mode chosen in one course (e.g. switching to "student view"
+     * to test an exercise) from leaking into a different course where the user is
+     * also a teacher.
+     * @param courseId Course ID
+     * @param mode Mode to save
+     */
+    static async saveModeForCourse(courseId: string, mode: AppMode): Promise<void> {
+        const data: ModeData = { mode };
+        await this.saveData(this.MODE_COURSE_PREFIX, courseId, data);
+    }
+
+    /**
+     * Gets the current operation mode for a specific course.
+     * @param courseId Course ID
+     * @returns Saved mode for this course, or null if none has been set yet
+     */
+    static async getModeForCourse(courseId: string): Promise<AppMode | null> {
+        const data = await this.getData<ModeData>(this.MODE_COURSE_PREFIX, courseId);
+        return data?.mode ?? null;
     }
 
     /**

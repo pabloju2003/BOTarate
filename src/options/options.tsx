@@ -253,7 +253,7 @@ const Options: React.FC = () => {
                 setIsUserTeacher(userIsTeacher);
 
                 if (!userIsTeacher) {
-                    await ModeManager.setMode(AppMode.STUDENT);
+                    await ModeManager.setMode(AppMode.STUDENT, selectedCourseId);
                     // Si está en un tab de profesor, cambiar a import-export
                     if (activeTab === "agents") {
                         setActiveTab("import-export");

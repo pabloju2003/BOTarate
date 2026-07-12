@@ -89,7 +89,7 @@ export function handleGetExerciseList(request: any, sendResponse: (response?: an
                             new Exercise(
                                 ex.name,
                                 ex.statement,
-                                ex.role ?? (ex.allowed === false ? 'challenger' : ex.isPicky === true ? 'proofreader' : 'tutor')
+                                ex.role ?? (ex.allowed === false ? 'observer' : ex.isPicky === true ? 'challenger' : 'tutor')
                             )
                     );
 

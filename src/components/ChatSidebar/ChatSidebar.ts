@@ -132,7 +132,7 @@ export const useChatSidebar = (props: ChatSidebarProps) => {
 
             setIsCheckingConfig(true);
             try {
-                ModeManager.clearCache();
+                ModeManager.clearCache(courseId);
 
                 // Si hay courseId, usar checkUserRoleForCourse para evitar problemas con el curso en caché
                 const message = courseId
@@ -144,10 +144,10 @@ export const useChatSidebar = (props: ChatSidebarProps) => {
                 setIsUserTeacher(userIsTeacher);
 
                 if (!userIsTeacher) {
-                    await ModeManager.setMode(AppMode.STUDENT);
+                    await ModeManager.setMode(AppMode.STUDENT, courseId);
                     setIsTeacherMode(false);
                 } else {
-                    const teacherMode = await ModeManager.isTeacherMode();
+                    const teacherMode = await ModeManager.isTeacherMode(courseId);
                     setIsTeacherMode(teacherMode);
                 }
 
@@ -356,7 +356,7 @@ export const useChatSidebar = (props: ChatSidebarProps) => {
         if (!isUserTeacher) return;
 
         try {
-            const newMode = await ModeManager.toggleMode();
+            const newMode = await ModeManager.toggleMode(courseId);
             const newIsTeacherMode = newMode === AppMode.TEACHER;
             setIsTeacherMode(newIsTeacherMode);
 
@@ -421,7 +421,7 @@ export const useChatSidebar = (props: ChatSidebarProps) => {
                         response.data.exercises.map((ex: any) => ({
                             name: ex.name,
                             statement: ex.statement,
-                            role: ex.role ?? (ex.allowed === false ? 'challenger' : ex.isPicky === true ? 'proofreader' : 'tutor'),
+                            role: ex.role ?? (ex.allowed === false ? 'observer' : ex.isPicky === true ? 'challenger' : 'tutor'),
                         }))
                     );
                 }

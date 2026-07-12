@@ -15,11 +15,11 @@ export class ExerciseStorageManager extends BaseStorageManager {
         }
 
         if (exercise.allowed === false) {
-            return 'challenger';
+            return 'observer';
         }
 
         if (exercise.isPicky === true) {
-            return 'proofreader';
+            return 'challenger';
         }
 
         return 'tutor';

@@ -530,7 +530,7 @@ const ExtensionContent: React.FC = () => {
             setExercises(
                 data.exercises.map((exercise: Exercise) => ({
                     ...exercise,
-                    role: exercise.role ?? ((exercise as any).allowed === false ? 'challenger' : (exercise as any).isPicky === true ? 'proofreader' : 'tutor'),
+                    role: exercise.role ?? ((exercise as any).allowed === false ? 'observer' : (exercise as any).isPicky === true ? 'challenger' : 'tutor'),
                 })),
             );
         }
