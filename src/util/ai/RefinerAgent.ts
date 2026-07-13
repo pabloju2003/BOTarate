@@ -70,6 +70,8 @@ class RefinerAgent extends BaseAgent {
      * Builds the system prompt for the Refiner role
      */
     private buildRefinerSystemPrompt(
+        exerciseName: string,
+        exerciseStatement: string,
         exerciseContext?: string,
         concepts?: string[],
         learningObjectives?: string,
@@ -90,6 +92,11 @@ class RefinerAgent extends BaseAgent {
 
 Your task is {taskDescription}.
 
+EXERCISE REQUIREMENTS (authoritative — refer back to this on every turn):
+Exercise: {exerciseName}
+{exerciseStatement}
+{exerciseContextBlock}
+
 THE REFINER PROCESS:
 The student will send you drafts of their solution. These drafts mix:
 - Actual code fragments (partial implementation)
@@ -104,6 +111,8 @@ YOUR RULES:
 6. Focus on logical structure and approach over syntax minutiae.
 7. When the student's draft is nearly complete and correct, congratulate them and confirm they can finalize the implementation.
 8. Treat natural-language comments as legitimate placeholders for parts not yet implemented — assess the intent, not the lack of code.
+9. BEFORE writing your assessment, mentally check the draft against EVERY numbered/listed requirement in "EXERCISE REQUIREMENTS" above, one by one — not just the part of the statement the draft happens to focus on right now. If the draft addresses a requirement that isn't part of the current "main" structure being built (e.g. a sub-requirement tackled in isolation, like identifying a specific subset of data), that is still valid progress on a real requirement — do NOT tell the student a requirement "is not part of the exercise" unless you have verified it is genuinely absent from the statement above. When in doubt, re-read the full statement before claiming something is out of scope.
+10. Do NOT prescribe a specific language construct (e.g. "you must use group by", "you should use a for loop instead") as the only correct way to satisfy a requirement, unless the exercise statement explicitly requires that construct. If the student's approach is functionally correct and satisfies the requirement, do not penalize it or repeatedly suggest an alternative construct purely for style or idiom. Judge correctness against the stated requirement, not against a preferred implementation style.
 
 {evaluationGuidelines}
 
@@ -127,6 +136,9 @@ PEDAGOGICAL CONTEXT:
         const variables = {
             role,
             taskDescription,
+            exerciseName,
+            exerciseStatement,
+            exerciseContextBlock: exerciseContext ? `\nExercise context:\n\`\`\`\n${exerciseContext}\n\`\`\`` : '',
             evaluationGuidelines,
             labContentToolsNote: this.buildLabContentToolsNote(),
             pageIdNote: pageId
@@ -200,7 +212,7 @@ Assess my updated draft. What improved compared to the previous version? What st
         this.hasSentInitialDraft = false;
 
         const systemPrompt = this.buildRefinerSystemPrompt(
-            exerciseContext, concepts, learningObjectives, progressSummary, pageId
+            exerciseName, exerciseStatement, exerciseContext, concepts, learningObjectives, progressSummary, pageId
         );
 
         this.openAIService.resetConversation();
@@ -294,7 +306,7 @@ Assess my updated draft. What improved compared to the previous version? What st
         this.currentExerciseContext = exerciseContext;
 
         const systemPrompt = this.buildRefinerSystemPrompt(
-            exerciseContext, concepts, learningObjectives, progressSummary, pageId
+            exerciseName, exerciseStatement, exerciseContext, concepts, learningObjectives, progressSummary, pageId
         );
 
         const safeHistory = (chatHistory || [])
