@@ -72,7 +72,11 @@ export const useChatSidebar = (props: ChatSidebarProps) => {
     const inputRef = useRef<HTMLTextAreaElement>(null);
 
     const isChatDisabled =
-        isAnyModalOpen || isGenerating || isLoadingExercises || (!!pageId && !hasExercisesLoaded) || isTeacherMode;
+        isAnyModalOpen ||
+        isGenerating ||
+        isLoadingExercises ||
+        (!!pageId && (!hasExercisesLoaded || exercises.length === 0)) ||
+        isTeacherMode;
 
     // Effect: Corregir pestaña activa si no es válida para el contexto actual
     useEffect(() => {
