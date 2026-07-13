@@ -23,6 +23,10 @@ export const useExerciseConfig = ({ exercises, pageId, courseId, onConfigUpdate,
     const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
     const [needsRefresh, setNeedsRefresh] = useState(false);
 
+    // Bulk role assignment state
+    const [selectedExercises, setSelectedExercises] = useState<Set<string>>(new Set());
+    const [bulkRole, setBulkRole] = useState<AIRole>('tutor');
+
     useEffect(() => {
         const exerciseChanges = !configsAreEqual(exerciseConfig, originalConfig);
         const labConfigChanges = verbosity !== originalVerbosity || reasoningEffort !== originalReasoning;
@@ -121,6 +125,34 @@ export const useExerciseConfig = ({ exercises, pageId, courseId, onConfigUpdate,
         updateExerciseFlags(exerciseName, _flags => ({ role }));
     };
 
+    const toggleExerciseSelection = (exerciseName: string) => {
+        setSelectedExercises(prev => {
+            const next = new Set(prev);
+            if (next.has(exerciseName)) {
+                next.delete(exerciseName);
+            } else {
+                next.add(exerciseName);
+            }
+            return next;
+        });
+    };
+
+    const toggleSelectAll = (exerciseNames: string[]) => {
+        setSelectedExercises(prev => {
+            const allSelected = exerciseNames.length > 0 && exerciseNames.every(name => prev.has(name));
+            return allSelected ? new Set() : new Set(exerciseNames);
+        });
+    };
+
+    const clearSelection = () => setSelectedExercises(new Set());
+
+    const handleApplyBulkRole = () => {
+        selectedExercises.forEach(exerciseName => {
+            handleRoleChange(exerciseName, bulkRole);
+        });
+        clearSelection();
+    };
+
     const handleSaveChanges = async () => {
         const changes = computePendingChanges(exerciseConfig, originalConfig);
         const hasLabConfigChanges = verbosity !== originalVerbosity || reasoningEffort !== originalReasoning;
@@ -209,6 +241,14 @@ export const useExerciseConfig = ({ exercises, pageId, courseId, onConfigUpdate,
         editingExercise,
         setEditingExercise,
         refreshExercises,
+        // Bulk role assignment
+        selectedExercises,
+        toggleExerciseSelection,
+        toggleSelectAll,
+        clearSelection,
+        bulkRole,
+        setBulkRole,
+        handleApplyBulkRole,
         // Lab config
         verbosity,
         setVerbosity,

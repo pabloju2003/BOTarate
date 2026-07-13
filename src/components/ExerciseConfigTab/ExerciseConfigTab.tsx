@@ -21,6 +21,14 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
         editingExercise,
         setEditingExercise,
         refreshExercises,
+        // Bulk role assignment
+        selectedExercises,
+        toggleExerciseSelection,
+        toggleSelectAll,
+        clearSelection,
+        bulkRole,
+        setBulkRole,
+        handleApplyBulkRole,
         // Lab config
         verbosity,
         setVerbosity,
@@ -38,6 +46,20 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
         { role: "challenger", label: "Challenger" },
         { role: "refiner", label: "Refiner" },
     ];
+
+    // Cada rol tiene un color distintivo para poder identificarlo de un vistazo
+    // en la columna, sin tener que leer el texto de cada select.
+    const roleColorClass: Record<AIRole, string> = {
+        observer: "bg-secondary text-white",
+        proofreader: "bg-warning text-dark",
+        tutor: "bg-primary text-white",
+        challenger: "bg-danger text-white",
+        refiner: "bg-info text-dark",
+    };
+
+    const exerciseNames = props.exercises.map(exercise => exercise.name);
+    const allSelected = exerciseNames.length > 0 && exerciseNames.every(name => selectedExercises.has(name));
+    const someSelected = selectedExercises.size > 0;
 
     const isInLab = props.pageId && props.pageId.trim() !== "";
 
@@ -135,15 +157,80 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
                 </div>
             )}
 
+            {/* Barra de aplicación de rol en bloque */}
+            <div className="d-flex flex-wrap align-items-center gap-2 mb-2 p-2 bg-light border rounded">
+                <span className="small text-muted me-1">
+                    {someSelected
+                        ? `${selectedExercises.size} ${t("options.exerciseConfig.bulk.selectedCount", "ejercicio(s) seleccionado(s)")}`
+                        : t("options.exerciseConfig.bulk.hint", "Selecciona varios ejercicios para aplicarles el mismo rol a la vez.")}
+                </span>
+                <select
+                    className="form-select form-select-sm"
+                    style={{ width: "auto" }}
+                    value={bulkRole}
+                    onChange={e => setBulkRole(e.target.value as AIRole)}
+                    disabled={isSaving}
+                >
+                    {roleColumns.map(({ role, label }) => (
+                        <option key={`bulk-${role}`} value={role}>
+                            {label}
+                        </option>
+                    ))}
+                </select>
+                <button
+                    className="btn btn-sm btn-outline-primary"
+                    onClick={handleApplyBulkRole}
+                    disabled={!someSelected || isSaving}
+                >
+                    {t("options.exerciseConfig.bulk.apply", "Aplicar a la selección")}
+                </button>
+                {someSelected && (
+                    <button
+                        className="btn btn-sm btn-link text-muted"
+                        onClick={clearSelection}
+                        disabled={isSaving}
+                    >
+                        {t("options.exerciseConfig.bulk.clear", "Deseleccionar")}
+                    </button>
+                )}
+            </div>
+
             <div className="table-responsive">
                 <table className="table table-sm table-hover">
                     <thead>
                         <tr>
                             <th
                                 scope="col"
+                                className="text-center"
+                                style={{
+                                    width: "6%",
+                                    backgroundColor: "#f8f9fa",
+                                    borderColor: "#dee2e6",
+                                    verticalAlign: "middle",
+                                }}
+                            >
+                                <input
+                                    className="form-check-input"
+                                    type="checkbox"
+                                    checked={allSelected}
+                                    onChange={() => toggleSelectAll(exerciseNames)}
+                                    disabled={isSaving}
+                                    title={t("options.exerciseConfig.bulk.selectAll", "Seleccionar todos")}
+                                    style={{
+                                        cursor: "pointer",
+                                        margin: 0,
+                                        position: "static",
+                                        float: "none",
+                                        top: "auto",
+                                        left: "auto",
+                                    }}
+                                />
+                            </th>
+                            <th
+                                scope="col"
                                 className="fw-bold"
                                 style={{
-                                    width: "40%",
+                                    width: "64%",
                                     backgroundColor: "#f8f9fa",
                                     color: "black",
                                     borderColor: "#dee2e6",
@@ -152,30 +239,45 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
                             >
                                 {t("options.exerciseConfig.table.headerName")}
                             </th>
-                            {roleColumns.map(({ role, label }) => (
-                                <th
-                                    key={`header-${role}`}
-                                    scope="col"
-                                    className="text-center fw-bold"
-                                    style={{
-                                        width: "12%",
-                                        backgroundColor: "#f8f9fa",
-                                        color: "black",
-                                        borderColor: "#dee2e6",
-                                        verticalAlign: "middle",
-                                    }}
-                                >
-                                    {label}
-                                </th>
-                            ))}
+                            <th
+                                scope="col"
+                                className="fw-bold text-center"
+                                style={{
+                                    width: "30%",
+                                    backgroundColor: "#f8f9fa",
+                                    color: "black",
+                                    borderColor: "#dee2e6",
+                                    verticalAlign: "middle",
+                                }}
+                            >
+                                {t("options.exerciseConfig.table.headerRole", "Rol")}
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
                         {props.exercises.map(exercise => {
                             const flags = exerciseConfig.get(exercise.name) ?? getDefaultFlags();
                             const selectedRole: AIRole = flags.role;
+                            const selectId = `${exercise.name}-role-select`;
                             return (
                                 <tr key={exercise.name}>
+                                    <td className="text-center" style={{ verticalAlign: "middle" }}>
+                                        <input
+                                            className="form-check-input"
+                                            type="checkbox"
+                                            checked={selectedExercises.has(exercise.name)}
+                                            onChange={() => toggleExerciseSelection(exercise.name)}
+                                            disabled={isSaving}
+                                            style={{
+                                                cursor: "pointer",
+                                                margin: 0,
+                                                position: "static",
+                                                float: "none",
+                                                top: "auto",
+                                                left: "auto",
+                                            }}
+                                        />
+                                    </td>
                                     <td style={{ verticalAlign: "middle" }}>
                                         <div className="d-flex align-items-center">
                                             <span style={{ flex: 1 }}>{exercise.name}</span>
@@ -200,42 +302,22 @@ const ExerciseConfigTab: React.FC<ExerciseConfigTabProps> = props => {
                                             </div>
                                         </div>
                                     </td>
-                                    {roleColumns.map(({ role, label }) => {
-                                        const inputId = `${exercise.name}-role-${role}`;
-                                        return (
-                                            <td
-                                                key={inputId}
-                                                className="text-center"
-                                                style={{ verticalAlign: "middle", position: "static" }}
-                                            >
-                                                <div className="d-flex justify-content-center align-items-center" style={{ position: "static" }}>
-                                                    <input
-                                                        className="form-check-input"
-                                                        type="radio"
-                                                        name={`role-group-${exercise.name}`}
-                                                        id={inputId}
-                                                        checked={selectedRole === role}
-                                                        onChange={() => handleRoleChange(exercise.name, role)}
-                                                        disabled={isSaving}
-                                                        style={{
-                                                            cursor: "pointer",
-                                                            margin: 0,
-                                                            position: "static",
-                                                            float: "none",
-                                                            top: "auto",
-                                                            left: "auto",
-                                                        }}
-                                                    />
-                                                    <label
-                                                        className="form-check-label visually-hidden"
-                                                        htmlFor={inputId}
-                                                    >
-                                                        {`${exercise.name} - ${label}`}
-                                                    </label>
-                                                </div>
-                                            </td>
-                                        );
-                                    })}
+                                    <td className="text-center" style={{ verticalAlign: "middle" }}>
+                                        <select
+                                            id={selectId}
+                                            className={`form-select form-select-sm ${roleColorClass[selectedRole]}`}
+                                            value={selectedRole}
+                                            onChange={e => handleRoleChange(exercise.name, e.target.value as AIRole)}
+                                            disabled={isSaving}
+                                            style={{ cursor: "pointer", fontWeight: 500 }}
+                                        >
+                                            {roleColumns.map(({ role, label }) => (
+                                                <option key={`${selectId}-${role}`} value={role}>
+                                                    {label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </td>
                                 </tr>
                             );
                         })}
