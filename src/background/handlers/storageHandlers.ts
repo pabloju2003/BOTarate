@@ -299,8 +299,21 @@ export function handleCheckUserRoleForCourse(request: any, sendResponse: (respon
 
             sendResponse({ success: true, isTeacher });
         } catch (error: any) {
-            console.error('[handleCheckUserRoleForCourse] Error:', error);
             const isSessionExpired = error.message?.includes('EgelaSessionExpired');
+            // La detección de rol parsea HTML de Egela (Moodle), frágil ante
+            // cambios de tema. Si NO es sesión expirada, el fallo casi seguro es
+            // un selector roto por una actualización de Egela: se registra de
+            // forma diferenciada para diagnosticar sin reinspeccionar el HTML.
+            if (isSessionExpired) {
+                console.warn(`[handleCheckUserRoleForCourse] Sesión de Egela expirada al comprobar el rol (curso ${courseId}).`);
+            } else {
+                console.error(
+                    `[handleCheckUserRoleForCourse] Fallo al determinar el rol en el curso ${courseId}. ` +
+                    `Causa probable: cambio de tema/versión de Egela que rompe el parseo del perfil o de participantes ` +
+                    `(ver common.ts). El usuario quedará como alumno. Detalle:`,
+                    error
+                );
+            }
             sendResponse({
                 success: false,
                 error: error.message,
